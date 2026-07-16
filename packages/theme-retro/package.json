@@ -6,6 +6,15 @@
   "license": "MIT",
   "author": "Vesture Contributors",
   "keywords": ["theme", "vesture", "vanilla-extract"],
+  "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/theme-retro#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sagar1596/vesture.git",
+    "directory": "packages/theme-retro"
+  },
+  "bugs": {
+    "url": "https://github.com/sagar1596/vesture/issues"
+  },
   "publishConfig": {
     "access": "public"
   },

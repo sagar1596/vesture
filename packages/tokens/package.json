@@ -6,6 +6,15 @@
   "license": "MIT",
   "author": "Vesture Contributors",
   "keywords": ["design-tokens", "theme", "vanilla-extract", "vesture"],
+  "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/tokens#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sagar1596/vesture.git",
+    "directory": "packages/tokens"
+  },
+  "bugs": {
+    "url": "https://github.com/sagar1596/vesture/issues"
+  },
   "publishConfig": {
     "access": "public"
   },

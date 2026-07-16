@@ -57,9 +57,9 @@ Versioning and changelogs are managed with [Changesets](https://github.com/chang
 
 3. Merging that PR triggers the same workflow to publish the updated packages to npm.
 
-**Before the first real publish**, this repo still needs:
-- A `repository`/`homepage`/`bugs` URL added to each publishable package's `package.json` (left as a placeholder until this repo has a real remote)
-- An `NPM_TOKEN` repository secret (an npm automation token with publish access to the `@vesture` org) for the release workflow to authenticate with
+**Before the first real publish**, this repo still needs an `NPM_TOKEN`
+repository secret (an npm automation token with publish access to the
+`@vesture` org) for the release workflow to authenticate with.
 
 ## License
 
