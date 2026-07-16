@@ -6,6 +6,15 @@
   "license": "MIT",
   "author": "Vesture Contributors",
   "keywords": ["react", "components", "ui", "design-system", "vesture"],
+  "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/react#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sagar1596/vesture.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/sagar1596/vesture/issues"
+  },
   "publishConfig": {
     "access": "public"
   },
