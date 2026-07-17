@@ -57,9 +57,18 @@ Versioning and changelogs are managed with [Changesets](https://github.com/chang
 
 3. Merging that PR triggers the same workflow to publish the updated packages to npm.
 
-**Before the first real publish**, this repo still needs an `NPM_TOKEN`
-repository secret (an npm automation token with publish access to the
-`@vesture` org) for the release workflow to authenticate with.
+Publishing authenticates via npm **Trusted Publishing** (OIDC) — GitHub
+Actions proves its identity to npm directly for each run, no long-lived
+`NPM_TOKEN` secret required. Each publishable package needs this repo +
+workflow registered as a Trusted Publisher once, on npmjs.com:
+
+1. Open the package's page → **Settings** → **Publishing access**
+2. Add a Trusted Publisher:
+   - Provider: **GitHub Actions**
+   - Repository: `sagar1596/vesture`
+   - Workflow filename: `release.yml`
+   - Environment: leave blank (this workflow doesn't use a GitHub environment)
+3. Repeat for `@vesture/tokens`, `@vesture/react`, and `@vesture/theme-retro`.
 
 ## License
 
