@@ -1,5 +1,8 @@
-# Requires an NPM_TOKEN repository secret (an npm automation token with
-# publish access to the @vesture org) before this workflow can publish.
+# Publishes via npm Trusted Publishing (OIDC) — no NPM_TOKEN needed.
+# Each publishable package (@vesture/tokens, @vesture/react,
+# @vesture/theme-retro) must have this repo + workflow file registered as a
+# "Trusted Publisher" on npmjs.com first. See packages/*/README or the repo
+# README for the exact steps.
 name: Release
 
 on:
@@ -14,6 +17,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,6 +31,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Trusted Publishing (OIDC) requires a recent npm CLI; the version
+      # bundled with actions/setup-node's Node 20 build is often too old.
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Build
         run: npm run build
 
@@ -37,4 +46,3 @@ jobs:
           version: npm run version-packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
