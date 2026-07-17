@@ -32,9 +32,10 @@ jobs:
         run: npm ci
 
       # Trusted Publishing (OIDC) requires a recent npm CLI; the version
-      # bundled with actions/setup-node's Node 20 build is often too old.
+      # bundled with actions/setup-node's Node 20 build is too old. Pinned to
+      # the v11 line (not "latest"/v12+) since v12 requires Node >=22.
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@11
 
       - name: Build
         run: npm run build
