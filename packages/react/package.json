@@ -1,11 +1,17 @@
 {
   "name": "@vesture/react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React component library for Vesture, themed via @vesture/tokens.",
   "type": "module",
   "license": "MIT",
   "author": "Vesture Contributors",
-  "keywords": ["react", "components", "ui", "design-system", "vesture"],
+  "keywords": [
+    "react",
+    "components",
+    "ui",
+    "design-system",
+    "vesture"
+  ],
   "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/react#readme",
   "repository": {
     "type": "git",
@@ -51,7 +57,7 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.28",
-    "@vesture/tokens": "^0.1.0"
+    "@vesture/tokens": "^0.1.1"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.5.0",
@@ -62,7 +68,7 @@
     "@types/react-dom": "^18.3.1",
     "@vanilla-extract/esbuild-plugin": "^2.3.9",
     "@vanilla-extract/vite-plugin": "^4.0.19",
-    "@vesture/theme-retro": "^0.1.0",
+    "@vesture/theme-retro": "^0.1.1",
     "jsdom": "^25.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
