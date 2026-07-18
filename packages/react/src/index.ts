@@ -128,4 +128,16 @@ export type {
   DateRangePickerProps,
 } from "./components/DateRangePicker";
 
+export { NumberInput } from "./components/NumberInput";
+export type { NumberInputProps } from "./components/NumberInput";
+
+export { Slider } from "./components/Slider";
+export type { SliderProps, SliderValue } from "./components/Slider";
+
+export { Combobox } from "./components/Combobox";
+export type {
+  ComboboxOption,
+  ComboboxProps,
+} from "./components/Combobox";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
