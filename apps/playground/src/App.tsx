@@ -9,6 +9,7 @@ import {
   Button,
   Card,
   Checkbox,
+  Combobox,
   DataGrid,
   defaultThemeClass,
   Divider,
@@ -16,11 +17,13 @@ import {
   Input,
   Label,
   Modal,
+  NumberInput,
   Pagination,
   Popover,
   Progress,
   Radio,
   Select,
+  Slider,
   Spinner,
   Stack,
   Switch,
@@ -28,10 +31,16 @@ import {
   Textarea,
   ToastProvider,
   Tooltip,
+  TreeView,
   useToast,
   vars
 } from "@vesture/react";
-import type { DataGridColumn } from "@vesture/react";
+import type {
+  ComboboxOption,
+  DataGridColumn,
+  SliderValue,
+  TreeNode,
+} from "@vesture/react";
 import { retroThemeClass } from "@vesture/theme-retro";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -154,6 +163,89 @@ function SelectionControlsSection() {
         <Divider />
         <Switch label="Toggle" checked={switchOn} onChange={(e) => setSwitchOn(e.target.checked)} />
         <Switch label="Disabled" disabled />
+      </Stack>
+    </Section>
+  );
+}
+
+const FRUIT_OPTIONS: ComboboxOption[] = [
+  { value: "apple", label: "Apple" },
+  { value: "banana", label: "Banana" },
+  { value: "cherry", label: "Cherry" },
+  { value: "durian", label: "Durian", disabled: true },
+  { value: "elderberry", label: "Elderberry" },
+  { value: "fig", label: "Fig" },
+  { value: "grape", label: "Grape" }
+];
+
+function NewFormControlsSection() {
+  const [quantity, setQuantity] = useState<number | null>(3);
+  const [volume, setVolume] = useState<SliderValue>(40);
+  const [priceRange, setPriceRange] = useState<SliderValue>([20, 80]);
+  const [fruit, setFruit] = useState<string | null>(null);
+  const [fruits, setFruits] = useState<string[]>(["apple", "fig"]);
+
+  return (
+    <Section title="NumberInput, Slider & Combobox">
+      <Stack gap="lg">
+        <Stack gap="sm">
+          <Label htmlFor="showcase-number-input">NumberInput</Label>
+          <NumberInput
+            id="showcase-number-input"
+            value={quantity}
+            onChange={setQuantity}
+            min={0}
+            max={10}
+            style={{ maxWidth: "160px" }}
+          />
+        </Stack>
+
+        <Divider />
+
+        <Stack gap="sm">
+          <Label htmlFor="showcase-slider">Slider — {volume}</Label>
+          <Slider id="showcase-slider" aria-label="Volume" value={volume} onChange={setVolume} />
+        </Stack>
+
+        <Stack gap="sm">
+          <Label>
+            Range slider — {Array.isArray(priceRange) ? `${priceRange[0]} – ${priceRange[1]}` : priceRange}
+          </Label>
+          <Slider
+            aria-label={["Minimum price", "Maximum price"]}
+            value={priceRange}
+            onChange={setPriceRange}
+            min={0}
+            max={200}
+          />
+        </Stack>
+
+        <Divider />
+
+        <Stack gap="sm">
+          <Label htmlFor="showcase-combobox">Combobox</Label>
+          <Combobox
+            id="showcase-combobox"
+            aria-label="Fruit"
+            options={FRUIT_OPTIONS}
+            value={fruit}
+            onChange={(next) => setFruit(next as string | null)}
+            placeholder="Search fruit…"
+          />
+        </Stack>
+
+        <Stack gap="sm">
+          <Label htmlFor="showcase-combobox-multi">Combobox (multi-select)</Label>
+          <Combobox
+            id="showcase-combobox-multi"
+            aria-label="Fruits"
+            options={FRUIT_OPTIONS}
+            multiple
+            value={fruits}
+            onChange={(next) => setFruits(next as string[])}
+            placeholder="Add fruit…"
+          />
+        </Stack>
       </Stack>
     </Section>
   );
@@ -512,6 +604,74 @@ function NavigationSection() {
   );
 }
 
+const treeViewNodes: TreeNode[] = [
+  {
+    id: "src",
+    label: "src",
+    children: [
+      {
+        id: "components",
+        label: "components",
+        children: [
+          { id: "button", label: "Button.tsx" },
+          { id: "checkbox", label: "Checkbox.tsx" },
+          {
+            id: "treeview-folder",
+            label: "TreeView",
+            children: [
+              { id: "treeview-tsx", label: "TreeView.tsx" },
+              { id: "treeview-css", label: "TreeView.css.ts" },
+            ],
+          },
+        ],
+      },
+      { id: "index", label: "index.ts" },
+    ],
+  },
+  { id: "lazy-folder", label: "Lazy folder (fetches on expand)", hasChildren: true },
+  { id: "package", label: "package.json" },
+];
+
+function fakeFetchTreeChildren(node: TreeNode): Promise<TreeNode[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        { id: `${node.id}-a`, label: "Fetched child A" },
+        { id: `${node.id}-b`, label: "Fetched child B" },
+      ]);
+    }, 700);
+  });
+}
+
+function TreeViewSection() {
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+
+  return (
+    <Section title="TreeView">
+      <Stack direction="row" gap="lg">
+        <Stack gap="sm">
+          <Label>Plain (expand/collapse only)</Label>
+          <TreeView nodes={treeViewNodes} defaultExpanded={new Set(["src", "components"])} />
+        </Stack>
+        <Stack gap="sm">
+          <Label>Multi-select with cascading + lazy loading</Label>
+          <TreeView
+            nodes={treeViewNodes}
+            selectable="multi"
+            selected={selected}
+            onSelectedChange={setSelected}
+            onLoadChildren={fakeFetchTreeChildren}
+            defaultExpanded={new Set(["src", "components"])}
+          />
+          <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+            Selected: {selected.size === 0 ? "none" : Array.from(selected).join(", ")}
+          </p>
+        </Stack>
+      </Stack>
+    </Section>
+  );
+}
+
 function ComposedFormSection() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -635,6 +795,7 @@ export function App() {
           <ThemeSwitcher theme={theme} setTheme={setTheme} />
           <ButtonsSection />
           <FormControlsSection />
+          <NewFormControlsSection />
           <SelectionControlsSection />
           <LayoutSection />
           <OverlaysSection />
@@ -643,6 +804,7 @@ export function App() {
           <DataGridSection />
           <DataGridFilteringSection />
           <DataGridServerSideSection />
+          <TreeViewSection />
           <ComposedFormSection />
         </Stack>
       </ToastProvider>

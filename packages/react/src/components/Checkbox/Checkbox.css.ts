@@ -59,6 +59,18 @@ export const box = style({
     "input:checked + &::after": {
       opacity: 1
     },
+    "input:indeterminate + &": {
+      background: vars.color.primary,
+      borderColor: vars.color.primary
+    },
+    "input:indeterminate + &::after": {
+      width: "8px",
+      height: "2px",
+      border: "none",
+      background: vars.color.primaryText,
+      transform: "none",
+      opacity: 1
+    },
     "input:focus-visible + &": {
       boxShadow: vars.shadow.focus
     },

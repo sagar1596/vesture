@@ -140,4 +140,11 @@ export type {
   ComboboxProps,
 } from "./components/Combobox";
 
+export { TreeView } from "./components/TreeView";
+export type {
+  TreeNode,
+  TreeViewProps,
+  TreeViewSelectable,
+} from "./components/TreeView";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
