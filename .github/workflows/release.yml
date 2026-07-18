@@ -1,8 +1,12 @@
-# Publishes via npm Trusted Publishing (OIDC) — no NPM_TOKEN needed.
-# Each publishable package (@vesture/tokens, @vesture/react,
-# @vesture/theme-retro) must have this repo + workflow file registered as a
-# "Trusted Publisher" on npmjs.com first. See packages/*/README or the repo
-# README for the exact steps.
+# Publishes via npm Trusted Publishing (OIDC), with NPM_TOKEN kept as a
+# fallback for bootstrapping brand-new packages. npm's OIDC token exchange
+# looks up the Trusted Publisher config on the package's *existing* registry
+# entry — a package that has never been published returns 404 "package not
+# found" from the exchange endpoint, so the very first publish of a new
+# package must go through a static token. npm always attempts OIDC first and
+# only falls back to the static token if OIDC fails, so once a package has
+# published successfully once, every later release uses OIDC automatically
+# and NPM_TOKEN just sits unused for that package.
 name: Release
 
 on:
@@ -50,3 +54,4 @@ jobs:
           version: npm run version-packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
