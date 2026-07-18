@@ -1,6 +1,18 @@
 import { style } from "@vanilla-extract/css";
 import { vars } from "@vesture/tokens";
 
+export const srOnly = style({
+  position: "absolute",
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0
+});
+
 export const container = style({
   position: "relative",
   overflow: "auto",
@@ -17,7 +29,7 @@ export const headerRow = style({
   position: "sticky",
   top: 0,
   display: "flex",
-  zIndex: 1,
+  zIndex: 2,
   background: vars.color.surface,
   borderBottomWidth: vars.border.width,
   borderBottomStyle: vars.border.style,
@@ -37,7 +49,8 @@ export const headerCell = style({
   fontWeight: vars.font.weightMedium,
   color: vars.color.textMuted,
   userSelect: "none",
-  boxSizing: "border-box"
+  boxSizing: "border-box",
+  background: vars.color.surface
 });
 
 export const headerButton = style({
@@ -96,6 +109,9 @@ export const row = style({
     },
     "&[data-selected='true']": {
       background: vars.color.surface
+    },
+    "&[data-editing='true']": {
+      background: vars.color.surface
     }
   }
 });
@@ -127,4 +143,95 @@ export const emptyState = style({
   justifyContent: "center",
   padding: vars.space.xl,
   color: vars.color.textMuted
+});
+
+// --- Pinned (frozen) columns ---
+
+export const pinnedCell = style({
+  position: "sticky",
+  zIndex: 1,
+  background: vars.color.surfaceRaised,
+  selectors: {
+    [`${row}:hover &`]: {
+      background: vars.color.surface
+    },
+    [`${row}[data-selected='true'] &`]: {
+      background: vars.color.surface
+    },
+    [`${row}[data-editing='true'] &`]: {
+      background: vars.color.surface
+    }
+  }
+});
+
+export const pinnedHeaderCell = style({
+  position: "sticky",
+  zIndex: 1,
+  background: vars.color.surface
+});
+
+export const pinnedLeftEdge = style({
+  boxShadow: "2px 0 4px -2px rgba(0, 0, 0, 0.15)"
+});
+
+export const pinnedRightEdge = style({
+  boxShadow: "-2px 0 4px -2px rgba(0, 0, 0, 0.15)"
+});
+
+// --- Inline row editing ---
+
+export const actionsCell = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: vars.space.xs,
+  flexShrink: 0,
+  width: "72px",
+  boxSizing: "border-box"
+});
+
+export const iconButton = style({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "26px",
+  height: "26px",
+  border: "none",
+  borderRadius: vars.radius.sm,
+  background: "transparent",
+  color: vars.color.textMuted,
+  cursor: "pointer",
+  fontSize: vars.font.sizeSm,
+  lineHeight: 1,
+  selectors: {
+    "&:hover": {
+      background: vars.color.border,
+      color: vars.color.text
+    },
+    "&:focus-visible": {
+      boxShadow: vars.shadow.focus
+    }
+  }
+});
+
+export const editInput = style({
+  width: "100%",
+  fontFamily: "inherit",
+  fontSize: "inherit",
+  color: vars.color.text,
+  background: vars.color.surfaceRaised,
+  borderWidth: vars.border.width,
+  borderStyle: vars.border.style,
+  borderColor: vars.color.primary,
+  borderRadius: vars.radius.sm,
+  paddingTop: vars.space.xs,
+  paddingBottom: vars.space.xs,
+  paddingLeft: vars.space.sm,
+  paddingRight: vars.space.sm,
+  outline: "none",
+  selectors: {
+    "&:focus-visible": {
+      boxShadow: vars.shadow.focus
+    }
+  }
 });

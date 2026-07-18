@@ -1,22 +1,31 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from "react";
 import {
+  actionsCell as actionsCellClass,
   body as bodyClass,
   cell as cellClass,
   checkboxCell as checkboxCellClass,
   container as containerClass,
+  editInput,
   emptyState as emptyStateClass,
   headerButton,
   headerCell,
   headerRow,
+  iconButton,
+  pinnedCell,
+  pinnedHeaderCell,
+  pinnedLeftEdge,
+  pinnedRightEdge,
   resizeHandle,
   row as rowClass,
-  sortIcon
+  sortIcon,
+  srOnly
 } from "./DataGrid.css";
 import type { DataGridColumn, SortDirection, SortState } from "./types";
 
 const DEFAULT_COLUMN_WIDTH = 160;
 const CHECKBOX_COLUMN_WIDTH = 44;
+const ACTIONS_COLUMN_WIDTH = 72;
 
 export interface DataGridProps<T> {
   columns: DataGridColumn<T>[];
@@ -31,6 +40,8 @@ export interface DataGridProps<T> {
   sort?: SortState | null;
   onSortChange?: (sort: SortState | null) => void;
   emptyMessage?: ReactNode;
+  /** Enables inline row editing; called when a row's edit is saved. */
+  onRowEdit?: (rowId: string, values: Record<string, string>) => void;
 }
 
 function compareValues(a: string | number, b: string | number): number {
@@ -59,7 +70,8 @@ export function DataGrid<T>({
   onSelectionChange,
   sort: controlledSort,
   onSortChange,
-  emptyMessage = "No data"
+  emptyMessage = "No data",
+  onRowEdit
 }: DataGridProps<T>): ReactElement {
   const [uncontrolledSort, setUncontrolledSort] = useState<SortState | null>(null);
   const [uncontrolledSelectedIds, setUncontrolledSelectedIds] = useState<Set<string>>(() => new Set());
@@ -67,6 +79,10 @@ export function DataGrid<T>({
     Object.fromEntries(columns.map((c) => [c.key, c.width ?? DEFAULT_COLUMN_WIDTH]))
   );
   const [scrollTop, setScrollTop] = useState(0);
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Record<string, string>>({});
+
+  const editingEnabled = Boolean(onRowEdit);
 
   const sort = controlledSort !== undefined ? controlledSort : uncontrolledSort;
   const selectedIds = controlledSelectedIds ?? uncontrolledSelectedIds;
@@ -161,6 +177,99 @@ export function DataGrid<T>({
     event.currentTarget.releasePointerCapture(event.pointerId);
   }, []);
 
+  const widthOf = useCallback(
+    (column: DataGridColumn<T>) => columnWidths[column.key] ?? column.width ?? DEFAULT_COLUMN_WIDTH,
+    [columnWidths]
+  );
+
+  // --- Column layout: split into left-pinned / scrollable / right-pinned
+  // groups (preserving each group's declared relative order), and compute a
+  // sticky offset for every pinned column plus the checkbox/actions columns.
+  const layout = useMemo(() => {
+    const leftPinned = columns.filter((c) => c.pinned === "left");
+    const rightPinned = columns.filter((c) => c.pinned === "right");
+    const middle = columns.filter((c) => !c.pinned);
+    const ordered = [...leftPinned, ...middle, ...rightPinned];
+
+    const leftOffsets = new Map<string, number>();
+    let leftAcc = selectable ? CHECKBOX_COLUMN_WIDTH : 0;
+    for (const column of leftPinned) {
+      leftOffsets.set(column.key, leftAcc);
+      leftAcc += widthOf(column);
+    }
+
+    const rightOffsets = new Map<string, number>();
+    let rightAcc = editingEnabled ? ACTIONS_COLUMN_WIDTH : 0;
+    for (let i = rightPinned.length - 1; i >= 0; i--) {
+      const column = rightPinned[i]!;
+      rightOffsets.set(column.key, rightAcc);
+      rightAcc += widthOf(column);
+    }
+
+    return {
+      ordered,
+      leftOffsets,
+      rightOffsets,
+      lastLeftKey: leftPinned[leftPinned.length - 1]?.key,
+      firstRightKey: rightPinned[0]?.key
+    };
+  }, [columns, selectable, editingEnabled, widthOf]);
+
+  const pinnedStyle = (column: DataGridColumn<T>): CSSProperties | undefined => {
+    if (column.pinned === "left" && layout.leftOffsets.has(column.key)) {
+      return { left: layout.leftOffsets.get(column.key) };
+    }
+    if (column.pinned === "right" && layout.rightOffsets.has(column.key)) {
+      return { right: layout.rightOffsets.get(column.key) };
+    }
+    return undefined;
+  };
+
+  const pinnedClass = (column: DataGridColumn<T>): string => {
+    const classes: string[] = [];
+    if (column.pinned) {
+      classes.push(pinnedCell);
+      if (column.key === layout.lastLeftKey) classes.push(pinnedLeftEdge);
+      if (column.key === layout.firstRightKey) classes.push(pinnedRightEdge);
+    }
+    return classes.join(" ");
+  };
+
+  const headerPinnedClass = (column: DataGridColumn<T>): string => {
+    const classes: string[] = [];
+    if (column.pinned) {
+      classes.push(pinnedHeaderCell);
+      if (column.key === layout.lastLeftKey) classes.push(pinnedLeftEdge);
+      if (column.key === layout.firstRightKey) classes.push(pinnedRightEdge);
+    }
+    return classes.join(" ");
+  };
+
+  const startEditing = (rowData: T) => {
+    const id = getRowId(rowData);
+    const draft: Record<string, string> = {};
+    for (const column of columns) {
+      if (column.editable) {
+        draft[column.key] = String(getCellValue(column, rowData) ?? "");
+      }
+    }
+    setEditDraft(draft);
+    setEditingRowId(id);
+  };
+
+  const cancelEditing = () => {
+    setEditingRowId(null);
+    setEditDraft({});
+  };
+
+  const saveEditing = () => {
+    if (editingRowId) {
+      onRowEdit?.(editingRowId, editDraft);
+    }
+    setEditingRowId(null);
+    setEditDraft({});
+  };
+
   const totalHeight = sortedData.length * rowHeight;
   const visibleCount = Math.ceil(height / rowHeight) + overscan * 2;
   const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
@@ -169,7 +278,8 @@ export function DataGrid<T>({
 
   const totalWidth =
     (selectable ? CHECKBOX_COLUMN_WIDTH : 0) +
-    columns.reduce((sum, c) => sum + (columnWidths[c.key] ?? DEFAULT_COLUMN_WIDTH), 0);
+    (editingEnabled ? ACTIONS_COLUMN_WIDTH : 0) +
+    columns.reduce((sum, c) => sum + widthOf(c), 0);
 
   return (
     <div
@@ -180,7 +290,7 @@ export function DataGrid<T>({
     >
       <div className={headerRow} style={{ width: totalWidth, minWidth: "100%" }} role="row">
         {selectable ? (
-          <div className={checkboxCellClass} role="columnheader">
+          <div className={[checkboxCellClass, pinnedHeaderCell].join(" ")} style={{ left: 0 }} role="columnheader">
             <input
               type="checkbox"
               checked={allSelected}
@@ -192,15 +302,15 @@ export function DataGrid<T>({
             />
           </div>
         ) : null}
-        {columns.map((column) => {
-          const width = columnWidths[column.key] ?? DEFAULT_COLUMN_WIDTH;
+        {layout.ordered.map((column) => {
+          const width = widthOf(column);
           const isSorted = sort?.key === column.key;
           const direction: SortDirection = isSorted ? sort!.direction : null;
           return (
             <div
               key={column.key}
-              className={headerCell}
-              style={{ width }}
+              className={[headerCell, headerPinnedClass(column)].filter(Boolean).join(" ")}
+              style={{ width, ...pinnedStyle(column) }}
               role="columnheader"
               aria-sort={
                 direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none"
@@ -230,6 +340,15 @@ export function DataGrid<T>({
             </div>
           );
         })}
+        {editingEnabled ? (
+          <div
+            className={[actionsCellClass, pinnedHeaderCell].join(" ")}
+            style={{ right: 0 }}
+            role="columnheader"
+          >
+            <span className={srOnly}>Actions</span>
+          </div>
+        ) : null}
       </div>
 
       {sortedData.length === 0 ? (
@@ -240,12 +359,20 @@ export function DataGrid<T>({
             const index = startIndex + i;
             const id = getRowId(rowData);
             const isSelected = selectedIds.has(id);
+            const isEditing = editingRowId === id;
             const style: CSSProperties = { top: index * rowHeight, height: rowHeight, width: totalWidth };
 
             return (
-              <div key={id} className={rowClass} style={style} role="row" data-selected={isSelected || undefined}>
+              <div
+                key={id}
+                className={rowClass}
+                style={style}
+                role="row"
+                data-selected={isSelected || undefined}
+                data-editing={isEditing || undefined}
+              >
                 {selectable ? (
-                  <div className={checkboxCellClass} role="cell">
+                  <div className={[checkboxCellClass, pinnedCell].join(" ")} style={{ left: 0 }} role="cell">
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -254,16 +381,72 @@ export function DataGrid<T>({
                     />
                   </div>
                 ) : null}
-                {columns.map((column) => (
+                {layout.ordered.map((column) => (
                   <div
                     key={column.key}
-                    className={cellClass}
-                    style={{ width: columnWidths[column.key] ?? DEFAULT_COLUMN_WIDTH }}
+                    className={[cellClass, pinnedClass(column)].filter(Boolean).join(" ")}
+                    style={{ width: widthOf(column), ...pinnedStyle(column) }}
                     role="cell"
                   >
-                    {column.render ? column.render(rowData) : String(getCellValue(column, rowData) ?? "")}
+                    {isEditing && column.editable ? (
+                      <input
+                        type="text"
+                        className={editInput}
+                        value={editDraft[column.key] ?? ""}
+                        onChange={(e) =>
+                          setEditDraft((prev) => ({ ...prev, [column.key]: e.target.value }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveEditing();
+                          if (e.key === "Escape") cancelEditing();
+                        }}
+                        aria-label={`Edit ${String(column.header)}`}
+                        autoFocus={column.key === columns.find((c) => c.editable)?.key}
+                      />
+                    ) : column.render ? (
+                      column.render(rowData)
+                    ) : (
+                      String(getCellValue(column, rowData) ?? "")
+                    )}
                   </div>
                 ))}
+                {editingEnabled ? (
+                  <div
+                    className={[actionsCellClass, pinnedCell].join(" ")}
+                    style={{ right: 0 }}
+                    role="cell"
+                  >
+                    {isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          className={iconButton}
+                          onClick={saveEditing}
+                          aria-label={`Save row ${index + 1}`}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          className={iconButton}
+                          onClick={cancelEditing}
+                          aria-label={`Cancel editing row ${index + 1}`}
+                        >
+                          ✕
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className={iconButton}
+                        onClick={() => startEditing(rowData)}
+                        aria-label={`Edit row ${index + 1}`}
+                      >
+                        ✎
+                      </button>
+                    )}
+                  </div>
+                ) : null}
               </div>
             );
           })}

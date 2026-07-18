@@ -275,29 +275,34 @@ const employees: Employee[] = Array.from({ length: 500 }, (_, i) => ({
 }));
 
 const employeeColumns: DataGridColumn<Employee>[] = [
-  { key: "name", header: "Name", sortable: true, accessor: (r) => r.name, width: 180 },
-  { key: "role", header: "Role", sortable: true, accessor: (r) => r.role, width: 140 },
+  { key: "name", header: "Name", sortable: true, accessor: (r) => r.name, width: 180, pinned: "left", editable: true },
+  { key: "role", header: "Role", sortable: true, accessor: (r) => r.role, width: 140, editable: true },
   { key: "department", header: "Department", sortable: true, accessor: (r) => r.department, width: 160 },
-  { key: "status", header: "Status", sortable: true, accessor: (r) => r.status, width: 120 }
+  { key: "status", header: "Status", sortable: true, accessor: (r) => r.status, width: 120, pinned: "right" }
 ];
 
 function DataGridSection() {
+  const [rows, setRows] = useState(employees);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   return (
     <Section title="DataGrid">
       <Stack gap="sm">
         <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
-          {employees.length} rows, virtualized · {selected.size} selected
+          {rows.length} rows, virtualized · {selected.size} selected · Name pinned left, Status pinned right ·
+          Name/Role editable
         </p>
         <DataGrid
           columns={employeeColumns}
-          data={employees}
+          data={rows}
           getRowId={(r) => r.id}
           height={360}
           selectable
           selectedIds={selected}
           onSelectionChange={setSelected}
+          onRowEdit={(id, values) =>
+            setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...values } : r)))
+          }
         />
       </Stack>
     </Section>
