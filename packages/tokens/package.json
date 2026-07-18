@@ -1,11 +1,16 @@
 {
   "name": "@vesture/tokens",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Themeable design token contract and reference theme for Vesture component libraries.",
   "type": "module",
   "license": "MIT",
   "author": "Vesture Contributors",
-  "keywords": ["design-tokens", "theme", "vanilla-extract", "vesture"],
+  "keywords": [
+    "design-tokens",
+    "theme",
+    "vanilla-extract",
+    "vesture"
+  ],
   "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/tokens#readme",
   "repository": {
     "type": "git",
