@@ -1,11 +1,15 @@
 {
   "name": "@vesture/theme-retro",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A warm, terracotta-and-serif retro theme implementing the @vesture/tokens contract.",
   "type": "module",
   "license": "MIT",
   "author": "Vesture Contributors",
-  "keywords": ["theme", "vesture", "vanilla-extract"],
+  "keywords": [
+    "theme",
+    "vesture",
+    "vanilla-extract"
+  ],
   "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/theme-retro#readme",
   "repository": {
     "type": "git",
@@ -44,7 +48,7 @@
   },
   "dependencies": {
     "@vanilla-extract/css": "^1.16.1",
-    "@vesture/tokens": "^0.1.0"
+    "@vesture/tokens": "^0.1.1"
   },
   "devDependencies": {
     "@vanilla-extract/esbuild-plugin": "^2.3.9",
