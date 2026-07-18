@@ -11,6 +11,7 @@ import type {
   CSSProperties,
   ForwardedRef,
   InputHTMLAttributes,
+  MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   ReactElement,
   ReactNode,
@@ -134,6 +135,13 @@ export interface DataGridProps<T> {
   onPageChange?: (page: number) => void;
   /** Renders an "Export" button in the grid's toolbar that exports the current view to Excel. */
   enableExport?: boolean;
+  onRowClick?: (row: T, event: ReactMouseEvent<HTMLDivElement>) => void;
+  onRowDoubleClick?: (row: T, event: ReactMouseEvent<HTMLDivElement>) => void;
+  onCellClick?: (
+    row: T,
+    column: DataGridColumn<T>,
+    event: ReactMouseEvent<HTMLDivElement>,
+  ) => void;
 }
 
 export interface DataGridExportOptions {
@@ -197,6 +205,9 @@ function DataGridInner<T>(
     pageSize,
     onPageChange,
     enableExport = false,
+    onRowClick,
+    onRowDoubleClick,
+    onCellClick,
   }: DataGridProps<T>,
   ref: ForwardedRef<DataGridHandle<T>>
 ): ReactElement {
@@ -717,12 +728,21 @@ function DataGridInner<T>(
                     role="row"
                     data-selected={isSelected || undefined}
                     data-editing={isEditing || undefined}
+                    onClick={
+                      onRowClick ? (e) => onRowClick(rowData, e) : undefined
+                    }
+                    onDoubleClick={
+                      onRowDoubleClick
+                        ? (e) => onRowDoubleClick(rowData, e)
+                        : undefined
+                    }
                   >
                     {selectable ? (
                       <div
                         className={[checkboxCellClass, pinnedCell].join(" ")}
                         style={{ left: 0 }}
                         role="cell"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <input
                           type="checkbox"
@@ -743,6 +763,11 @@ function DataGridInner<T>(
                           ...pinnedStyle(column),
                         }}
                         role="cell"
+                        onClick={
+                          onCellClick
+                            ? (e) => onCellClick(rowData, column, e)
+                            : undefined
+                        }
                       >
                         {isEditing && column.editable ? (
                           <input
@@ -777,6 +802,7 @@ function DataGridInner<T>(
                         className={[actionsCellClass, pinnedCell].join(" ")}
                         style={{ right: 0 }}
                         role="cell"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {isEditing ? (
                           <>

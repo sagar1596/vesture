@@ -135,6 +135,75 @@ describe("DataGrid", () => {
     ).toBeChecked();
   });
 
+  describe("row and cell interaction events", () => {
+    const small = people.slice(0, 3);
+
+    it("calls onRowClick with the row data when a cell is clicked", () => {
+      const onRowClick = vi.fn();
+      render(
+        <DataGrid
+          columns={columns}
+          data={small}
+          getRowId={(r) => r.id}
+          onRowClick={onRowClick}
+        />
+      );
+
+      fireEvent.click(screen.getByText("Person 1"));
+      expect(onRowClick).toHaveBeenCalledTimes(1);
+      expect(onRowClick.mock.calls[0]![0]).toEqual(small[1]);
+    });
+
+    it("calls onRowDoubleClick with the row data on double-click", () => {
+      const onRowDoubleClick = vi.fn();
+      render(
+        <DataGrid
+          columns={columns}
+          data={small}
+          getRowId={(r) => r.id}
+          onRowDoubleClick={onRowDoubleClick}
+        />
+      );
+
+      fireEvent.doubleClick(screen.getByText("Person 0"));
+      expect(onRowDoubleClick).toHaveBeenCalledTimes(1);
+      expect(onRowDoubleClick.mock.calls[0]![0]).toEqual(small[0]);
+    });
+
+    it("calls onCellClick with the row and column clicked", () => {
+      const onCellClick = vi.fn();
+      render(
+        <DataGrid
+          columns={columns}
+          data={small}
+          getRowId={(r) => r.id}
+          onCellClick={onCellClick}
+        />
+      );
+
+      fireEvent.click(screen.getByText("Person 2"));
+      expect(onCellClick).toHaveBeenCalledTimes(1);
+      expect(onCellClick.mock.calls[0]![0]).toEqual(small[2]);
+      expect(onCellClick.mock.calls[0]![1]).toEqual(columns[0]);
+    });
+
+    it("does not trigger onRowClick when clicking the row-select checkbox", () => {
+      const onRowClick = vi.fn();
+      render(
+        <DataGrid
+          columns={columns}
+          data={small}
+          getRowId={(r) => r.id}
+          selectable
+          onRowClick={onRowClick}
+        />
+      );
+
+      fireEvent.click(screen.getByRole("checkbox", { name: "Select row 1" }));
+      expect(onRowClick).not.toHaveBeenCalled();
+    });
+  });
+
   it("shows the empty message when there is no data", () => {
     render(
       <DataGrid

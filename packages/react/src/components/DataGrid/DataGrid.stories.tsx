@@ -99,6 +99,34 @@ export const LargeDataset: Story = {
   ),
 };
 
+export const RowInteraction: Story = {
+  render: () => {
+    const [log, setLog] = useState<string[]>([]);
+    const append = (entry: string) =>
+      setLog((prev) => [entry, ...prev].slice(0, 5));
+    return (
+      <div>
+        <DataGrid
+          columns={columns}
+          data={employees.slice(0, 20)}
+          getRowId={(r) => r.id}
+          height={400}
+          onRowClick={(row) => append(`Row clicked: ${row.name}`)}
+          onRowDoubleClick={(row) => append(`Row double-clicked: ${row.name}`)}
+          onCellClick={(row, column) =>
+            append(`Cell clicked: ${row.name} / ${column.key}`)
+          }
+        />
+        <ul>
+          {log.map((entry, i) => (
+            <li key={i}>{entry}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  },
+};
+
 export const Selectable: Story = {
   render: () => {
     const [selected, setSelected] = useState<Set<string>>(new Set());
