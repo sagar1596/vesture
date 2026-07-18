@@ -88,3 +88,63 @@ export const Selectable: Story = {
 export const Empty: Story = {
   render: () => <DataGrid columns={columns} data={[]} getRowId={(r) => r.id} height={200} />
 };
+
+const pinnedColumns: DataGridColumn<Employee>[] = [
+  { key: "name", header: "Name", sortable: true, accessor: (r) => r.name, width: 180, pinned: "left" },
+  { key: "role", header: "Role", sortable: true, accessor: (r) => r.role, width: 140 },
+  { key: "department", header: "Department", sortable: true, accessor: (r) => r.department, width: 160 },
+  {
+    key: "status",
+    header: "Status",
+    sortable: true,
+    accessor: (r) => r.status,
+    width: 120,
+    render: (r) => <Badge variant={r.status === "active" ? "success" : "default"}>{r.status}</Badge>
+  },
+  {
+    key: "salary",
+    header: "Salary",
+    sortable: true,
+    accessor: (r) => r.salary,
+    width: 140,
+    pinned: "right",
+    render: (r) => `$${r.salary.toLocaleString()}`
+  }
+];
+
+export const PinnedColumns: Story = {
+  render: () => (
+    <DataGrid columns={pinnedColumns} data={employees.slice(0, 30)} getRowId={(r) => r.id} height={400} />
+  )
+};
+
+const editableColumns: DataGridColumn<Employee>[] = [
+  { key: "name", header: "Name", sortable: true, accessor: (r) => r.name, width: 180, editable: true },
+  { key: "role", header: "Role", sortable: true, accessor: (r) => r.role, width: 140, editable: true },
+  { key: "department", header: "Department", sortable: true, accessor: (r) => r.department, width: 160 },
+  {
+    key: "status",
+    header: "Status",
+    sortable: true,
+    accessor: (r) => r.status,
+    width: 120,
+    render: (r) => <Badge variant={r.status === "active" ? "success" : "default"}>{r.status}</Badge>
+  }
+];
+
+export const EditableRows: Story = {
+  render: () => {
+    const [rows, setRows] = useState(employees.slice(0, 20));
+    return (
+      <DataGrid
+        columns={editableColumns}
+        data={rows}
+        getRowId={(r) => r.id}
+        height={400}
+        onRowEdit={(id, values) =>
+          setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...values } : r)))
+        }
+      />
+    );
+  }
+};

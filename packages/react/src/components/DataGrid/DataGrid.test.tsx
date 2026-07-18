@@ -84,4 +84,106 @@ describe("DataGrid", () => {
     render(<DataGrid columns={columns} data={[]} getRowId={(r) => r.id} emptyMessage="Nothing here" />);
     expect(screen.getByText("Nothing here")).toBeInTheDocument();
   });
+
+  describe("pinned columns", () => {
+    const pinnedColumns: DataGridColumn<Person>[] = [
+      { key: "name", header: "Name", pinned: "left", accessor: (r) => r.name },
+      { key: "age", header: "Age", accessor: (r) => r.age },
+      { key: "id", header: "ID", pinned: "right", accessor: (r) => r.id }
+    ];
+
+    it("renders left-pinned columns before scrollable columns regardless of declared order", () => {
+      const small = people.slice(0, 2);
+      render(<DataGrid columns={pinnedColumns} data={small} getRowId={(r) => r.id} />);
+      const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
+      expect(headers).toEqual(["Name", "Age", "ID"]);
+    });
+
+    it("applies a sticky left offset to left-pinned cells", () => {
+      const small = people.slice(0, 2);
+      render(<DataGrid columns={pinnedColumns} data={small} getRowId={(r) => r.id} selectable />);
+      const nameHeader = screen.getByRole("columnheader", { name: /Name/ });
+      // The checkbox column (44px) comes before it when selectable.
+      expect(nameHeader.style.left).toBe("44px");
+      expect(nameHeader.className).toMatch(/pinnedHeaderCell/);
+    });
+
+    it("applies a sticky right offset to right-pinned cells", () => {
+      const small = people.slice(0, 2);
+      render(<DataGrid columns={pinnedColumns} data={small} getRowId={(r) => r.id} />);
+      const idHeader = screen.getByRole("columnheader", { name: /ID/ });
+      expect(idHeader.style.right).toBe("0px");
+      expect(idHeader.className).toMatch(/pinnedHeaderCell/);
+    });
+  });
+
+  describe("inline row editing", () => {
+    const editableColumns: DataGridColumn<Person>[] = [
+      { key: "name", header: "Name", editable: true, accessor: (r) => r.name },
+      { key: "age", header: "Age", accessor: (r) => r.age }
+    ];
+
+    it("does not render an actions column without onRowEdit", () => {
+      const small = people.slice(0, 2);
+      render(<DataGrid columns={editableColumns} data={small} getRowId={(r) => r.id} />);
+      expect(screen.queryByRole("button", { name: /Edit row/ })).not.toBeInTheDocument();
+    });
+
+    it("enters edit mode and shows an input for editable columns only", () => {
+      const small = people.slice(0, 1);
+      render(<DataGrid columns={editableColumns} data={small} getRowId={(r) => r.id} onRowEdit={() => {}} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit row 1" }));
+      expect(screen.getByRole("textbox", { name: "Edit Name" })).toHaveValue("Person 0");
+      expect(screen.queryByRole("textbox", { name: "Edit Age" })).not.toBeInTheDocument();
+    });
+
+    it("saves the edited value via onRowEdit and exits edit mode", () => {
+      const onRowEdit = vi.fn();
+      const small = people.slice(0, 1);
+      render(<DataGrid columns={editableColumns} data={small} getRowId={(r) => r.id} onRowEdit={onRowEdit} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit row 1" }));
+      fireEvent.change(screen.getByRole("textbox", { name: "Edit Name" }), {
+        target: { value: "Ada Lovelace" }
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Save row 1" }));
+
+      expect(onRowEdit).toHaveBeenCalledWith("r0", { name: "Ada Lovelace" });
+      expect(screen.queryByRole("textbox", { name: "Edit Name" })).not.toBeInTheDocument();
+    });
+
+    it("discards changes on cancel without calling onRowEdit", () => {
+      const onRowEdit = vi.fn();
+      const small = people.slice(0, 1);
+      render(<DataGrid columns={editableColumns} data={small} getRowId={(r) => r.id} onRowEdit={onRowEdit} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit row 1" }));
+      fireEvent.change(screen.getByRole("textbox", { name: "Edit Name" }), {
+        target: { value: "Discarded" }
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Cancel editing row 1" }));
+
+      expect(onRowEdit).not.toHaveBeenCalled();
+      expect(screen.queryByRole("textbox", { name: "Edit Name" })).not.toBeInTheDocument();
+      expect(screen.getByText("Person 0")).toBeInTheDocument();
+    });
+
+    it("saves on Enter and cancels on Escape", () => {
+      const onRowEdit = vi.fn();
+      const small = people.slice(0, 1);
+      render(<DataGrid columns={editableColumns} data={small} getRowId={(r) => r.id} onRowEdit={onRowEdit} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit row 1" }));
+      const input = screen.getByRole("textbox", { name: "Edit Name" });
+      fireEvent.change(input, { target: { value: "Enter Saved" } });
+      fireEvent.keyDown(input, { key: "Enter" });
+      expect(onRowEdit).toHaveBeenCalledWith("r0", { name: "Enter Saved" });
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit row 1" }));
+      const input2 = screen.getByRole("textbox", { name: "Edit Name" });
+      fireEvent.keyDown(input2, { key: "Escape" });
+      expect(screen.queryByRole("textbox", { name: "Edit Name" })).not.toBeInTheDocument();
+    });
+  });
 });

@@ -7,6 +7,10 @@ export interface DataGridColumn<T> {
   minWidth?: number;
   sortable?: boolean;
   resizable?: boolean;
+  /** Freeze this column to an edge so it stays visible during horizontal scroll. */
+  pinned?: "left" | "right";
+  /** Allow this column's cells to be edited when the row is in edit mode. */
+  editable?: boolean;
   accessor?: (row: T) => string | number;
   render?: (row: T) => ReactNode;
 }
