@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export type SliderValue = number | [number, number];
 
 export interface SliderProps {
@@ -8,7 +10,9 @@ export interface SliderProps {
   max?: number;
   step?: number;
   disabled?: boolean;
+  id?: string;
   className?: string;
+  style?: CSSProperties;
   /** Label for the single thumb, or the [start, end] thumbs in range mode. */
   "aria-label"?: string | [string, string];
   /** Formats the value shown to assistive tech and in the value label, e.g. `(v) => \`$\${v}\`` */

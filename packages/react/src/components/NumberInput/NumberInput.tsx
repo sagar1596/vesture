@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
-import type { FocusEvent, KeyboardEvent as ReactKeyboardEvent, ReactElement } from "react";
+import type { CSSProperties, FocusEvent, KeyboardEvent as ReactKeyboardEvent, ReactElement } from "react";
 import { useMergeRefs } from "@floating-ui/react";
 import { input, stepButton, stepperGroup, wrapper } from "./NumberInput.css";
 
@@ -16,6 +16,7 @@ export interface NumberInputProps {
   id?: string;
   name?: string;
   className?: string;
+  style?: CSSProperties;
   "aria-label"?: string;
   "aria-labelledby"?: string;
 }
@@ -45,6 +46,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     id,
     name,
     className,
+    style,
     ...rest
   },
   ref
@@ -131,7 +133,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   const classes = [wrapper, className].filter(Boolean).join(" ");
 
   return (
-    <span className={classes} data-disabled={disabled || undefined}>
+    <span className={classes} style={style} data-disabled={disabled || undefined}>
       <input
         ref={mergedRef}
         id={id}

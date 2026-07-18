@@ -25,7 +25,9 @@ export function Slider({
   max = 100,
   step = 1,
   disabled = false,
+  id,
   className,
+  style,
   formatValue = (v) => String(v),
   ...rest
 }: SliderProps): ReactElement {
@@ -41,6 +43,7 @@ export function Slider({
   };
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const thumbRefs = useRef<Record<"single" | 0 | 1, HTMLSpanElement | null>>({ single: null, 0: null, 1: null });
   const dragThumbIndex = useRef<0 | 1 | null>(null);
   const isDragging = useRef(false);
 
@@ -81,6 +84,7 @@ export function Slider({
   const startDrag = (index: 0 | 1 | null) => (event: ReactPointerEvent) => {
     if (disabled) return;
     event.preventDefault();
+    thumbRefs.current[index ?? "single"]?.focus();
     isDragging.current = true;
     dragThumbIndex.current = index;
     setThumbValue(index, valueFromClientX(event.clientX));
@@ -137,6 +141,9 @@ export function Slider({
   const renderThumb = (index: 0 | 1 | null, current: number, label: string | undefined) => (
     <span
       key={index ?? "single"}
+      ref={(node) => {
+        thumbRefs.current[index ?? "single"] = node;
+      }}
       role="slider"
       tabIndex={disabled ? -1 : 0}
       aria-label={label}
@@ -158,7 +165,7 @@ export function Slider({
   const classes = [root, className].filter(Boolean).join(" ");
 
   return (
-    <span className={classes} data-disabled={disabled || undefined}>
+    <span id={id} className={classes} style={style} data-disabled={disabled || undefined}>
       <span ref={trackRef} className={track} onPointerDown={handleTrackPointerDown}>
         {isRange(value) ? (
           <span
