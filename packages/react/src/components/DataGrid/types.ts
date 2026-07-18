@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+export type AggregateType = "sum" | "avg" | "count" | "min" | "max";
+
 export interface DataGridColumn<T> {
   key: string;
   header: ReactNode;
@@ -19,6 +21,8 @@ export interface DataGridColumn<T> {
   render?: (row: T) => ReactNode;
   /** Value used when exporting this column; falls back to accessor, then the raw row value. Not derived from render, since render returns a ReactNode. */
   exportValue?: (row: T) => string | number;
+  /** Computed per-group when the grid is grouped, and shown in this column's slot within the group header row. */
+  aggregate?: AggregateType | ((rows: T[]) => ReactNode);
 }
 
 export type SortDirection = "asc" | "desc" | null;

@@ -353,6 +353,7 @@ interface Employee {
   role: string;
   department: string;
   status: "active" | "inactive";
+  salary: number;
 }
 
 const DEPARTMENTS = ["Engineering", "Design", "Sales", "Marketing", "Support"];
@@ -363,7 +364,8 @@ const employees: Employee[] = Array.from({ length: 500 }, (_, i) => ({
   name: `Employee ${i}`,
   role: ROLES[i % ROLES.length]!,
   department: DEPARTMENTS[i % DEPARTMENTS.length]!,
-  status: i % 5 === 0 ? "inactive" : "active"
+  status: i % 5 === 0 ? "inactive" : "active",
+  salary: 60000 + ((i * 733) % 80000)
 }));
 
 const employeeColumns: DataGridColumn<Employee>[] = [
@@ -395,6 +397,41 @@ function DataGridSection() {
           onRowEdit={(id, values) =>
             setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...values } : r)))
           }
+        />
+      </Stack>
+    </Section>
+  );
+}
+
+const groupableEmployeeColumns: DataGridColumn<Employee>[] = [
+  { key: "name", header: "Name", accessor: (r) => r.name, width: 180 },
+  { key: "role", header: "Role", accessor: (r) => r.role, width: 140 },
+  { key: "department", header: "Department", accessor: (r) => r.department, width: 160 },
+  { key: "status", header: "Status", accessor: (r) => r.status, width: 120 },
+  {
+    key: "salary",
+    header: "Salary",
+    accessor: (r) => r.salary,
+    width: 140,
+    aggregate: "sum",
+    render: (r) => `$${r.salary.toLocaleString()}`
+  }
+];
+
+function DataGridGroupingSection() {
+  return (
+    <Section title="DataGrid — Grouping">
+      <Stack gap="sm">
+        <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+          Grouped by Department · Salary column aggregates via sum · click the chevron to collapse/expand
+        </p>
+        <DataGrid
+          columns={groupableEmployeeColumns}
+          data={employees.slice(0, 100)}
+          getRowId={(r) => r.id}
+          height={400}
+          groupBy="department"
+          selectable
         />
       </Stack>
     </Section>
@@ -802,6 +839,7 @@ export function App() {
           <NavigationSection />
           <FeedbackSection />
           <DataGridSection />
+          <DataGridGroupingSection />
           <DataGridFilteringSection />
           <DataGridServerSideSection />
           <TreeViewSection />

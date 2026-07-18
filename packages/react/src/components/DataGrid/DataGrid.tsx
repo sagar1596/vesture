@@ -31,6 +31,12 @@ import {
   filterInput,
   filterRow,
   gridWrapper,
+  groupAggregateItem,
+  groupAggregates,
+  groupChevron,
+  groupCount,
+  groupLabel,
+  groupRow,
   headerButton,
   headerCell,
   headerRow,
@@ -135,6 +141,16 @@ export interface DataGridProps<T> {
   onPageChange?: (page: number) => void;
   /** Renders an "Export" button in the grid's toolbar that exports the current view to Excel. */
   enableExport?: boolean;
+  /** Groups rows by this column key (single-level). undefined = no grouping. */
+  groupBy?: string;
+  defaultGroupBy?: string;
+  onGroupByChange?: (key: string | undefined) => void;
+  /** Which group keys are expanded. Default: all expanded. */
+  expandedGroups?: Set<string>;
+  defaultExpandedGroups?: Set<string>;
+  onExpandedGroupsChange?: (expanded: Set<string>) => void;
+  /** Height of a group header row; defaults to rowHeight. */
+  groupRowHeight?: number;
   onRowClick?: (row: T, event: ReactMouseEvent<HTMLDivElement>) => void;
   onRowDoubleClick?: (row: T, event: ReactMouseEvent<HTMLDivElement>) => void;
   onCellClick?: (
@@ -181,6 +197,64 @@ function getCellValue<T>(column: DataGridColumn<T>, row: T): string | number {
   return (row as Record<string, unknown>)[column.key] as string | number;
 }
 
+function getGroupValue<T>(
+  row: T,
+  groupBy: string,
+  column: DataGridColumn<T> | undefined
+): string {
+  if (column) {
+    return String(getCellValue(column, row) ?? "");
+  }
+  return String((row as Record<string, unknown>)[groupBy] ?? "");
+}
+
+function formatAggregateNumber(value: number): string | number {
+  return Number.isInteger(value) ? value : value.toFixed(2);
+}
+
+function computeAggregate<T>(
+  column: DataGridColumn<T>,
+  rows: T[]
+): ReactNode {
+  const { aggregate } = column;
+  if (!aggregate) return null;
+  if (typeof aggregate === "function") {
+    return aggregate(rows);
+  }
+  if (aggregate === "count") {
+    return rows.length;
+  }
+  const values = rows.map((r) => Number(getCellValue(column, r)) || 0);
+  switch (aggregate) {
+    case "sum":
+      return formatAggregateNumber(values.reduce((a, b) => a + b, 0));
+    case "avg":
+      return formatAggregateNumber(
+        values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
+      );
+    case "min":
+      return formatAggregateNumber(values.length ? Math.min(...values) : 0);
+    case "max":
+      return formatAggregateNumber(values.length ? Math.max(...values) : 0);
+    default:
+      return null;
+  }
+}
+
+interface GroupFlatEntry<T> {
+  type: "group";
+  key: string;
+  rows: T[];
+  collapsed: boolean;
+}
+
+interface DataFlatEntry<T> {
+  type: "data";
+  row: T;
+}
+
+type FlatEntry<T> = GroupFlatEntry<T> | DataFlatEntry<T>;
+
 function DataGridInner<T>(
   {
     columns,
@@ -205,6 +279,13 @@ function DataGridInner<T>(
     pageSize,
     onPageChange,
     enableExport = false,
+    groupBy: controlledGroupBy,
+    defaultGroupBy,
+    onGroupByChange,
+    expandedGroups: controlledExpandedGroups,
+    defaultExpandedGroups,
+    onExpandedGroupsChange,
+    groupRowHeight,
     onRowClick,
     onRowDoubleClick,
     onCellClick,
@@ -228,6 +309,11 @@ function DataGridInner<T>(
   const [scrollTop, setScrollTop] = useState(0);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Record<string, string>>({});
+  const [uncontrolledGroupBy, setUncontrolledGroupBy] = useState<
+    string | undefined
+  >(defaultGroupBy);
+  const [uncontrolledExpandedGroups, setUncontrolledExpandedGroups] =
+    useState<Set<string> | undefined>(defaultExpandedGroups);
 
   const editingEnabled = Boolean(onRowEdit);
 
@@ -235,6 +321,34 @@ function DataGridInner<T>(
   const filters =
     controlledFilters !== undefined ? controlledFilters : uncontrolledFilters;
   const selectedIds = controlledSelectedIds ?? uncontrolledSelectedIds;
+  const groupBy =
+    controlledGroupBy !== undefined ? controlledGroupBy : uncontrolledGroupBy;
+  // undefined means "all groups expanded" until the user (or caller) toggles one.
+  const expandedGroups =
+    controlledExpandedGroups !== undefined
+      ? controlledExpandedGroups
+      : uncontrolledExpandedGroups;
+
+  const setExpandedGroups = (next: Set<string>) => {
+    if (controlledExpandedGroups === undefined) {
+      setUncontrolledExpandedGroups(next);
+    }
+    onExpandedGroupsChange?.(next);
+  };
+
+  const isGroupExpanded = (key: string): boolean =>
+    expandedGroups === undefined ? true : expandedGroups.has(key);
+
+  const toggleGroupExpanded = (key: string, allGroupKeys: string[]) => {
+    const current = expandedGroups ?? new Set(allGroupKeys);
+    const next = new Set(current);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    setExpandedGroups(next);
+  };
 
   const setSort = (next: SortState | null) => {
     if (controlledSort === undefined) {
@@ -310,6 +424,59 @@ function DataGridInner<T>(
     return sort.direction === "desc" ? sorted.reverse() : sorted;
   }, [filteredData, sort, columns, serverSide, data]);
 
+  const groupColumn = useMemo(
+    () => (groupBy ? columns.find((c) => c.key === groupBy) : undefined),
+    [columns, groupBy]
+  );
+
+  // Partitions sortedData into groups keyed by the groupBy column's value,
+  // preserving each group's existing internal sort order.
+  const groupedMap = useMemo(() => {
+    if (!groupBy) return null;
+    const map = new Map<string, T[]>();
+    for (const row of sortedData) {
+      const key = getGroupValue(row, groupBy, groupColumn);
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(row);
+      } else {
+        map.set(key, [row]);
+      }
+    }
+    return map;
+  }, [sortedData, groupBy, groupColumn]);
+
+  // Flat render array: group-header entries followed by their data rows,
+  // omitted entirely when a group is collapsed. This (not sortedData) is
+  // what the virtualization windowing below operates on.
+  const flatEntries = useMemo<FlatEntry<T>[]>(() => {
+    if (!groupedMap) {
+      return sortedData.map((row) => ({ type: "data", row }) as const);
+    }
+    const entries: FlatEntry<T>[] = [];
+    for (const [key, rows] of groupedMap) {
+      const collapsed = !isGroupExpanded(key);
+      entries.push({ type: "group", key, rows, collapsed });
+      if (!collapsed) {
+        for (const row of rows) {
+          entries.push({ type: "data", row });
+        }
+      }
+    }
+    return entries;
+  }, [groupedMap, expandedGroups, sortedData]);
+
+  // Select-all only ever operates on rows the user can currently see —
+  // a collapsed group's rows are excluded, since selecting them would be
+  // invisible to the user.
+  const visibleDataRows = useMemo(
+    () =>
+      flatEntries
+        .filter((e): e is DataFlatEntry<T> => e.type === "data")
+        .map((e) => e.row),
+    [flatEntries]
+  );
+
   const exportToExcel = useCallback(
     async (options?: DataGridExportOptions) => {
       const XLSX = await import("xlsx");
@@ -349,16 +516,16 @@ function DataGridInner<T>(
     page !== undefined && pageSize !== undefined && onPageChange !== undefined;
 
   const allSelected =
-    sortedData.length > 0 &&
-    sortedData.every((r) => selectedIds.has(getRowId(r)));
+    visibleDataRows.length > 0 &&
+    visibleDataRows.every((r) => selectedIds.has(getRowId(r)));
   const someSelected =
-    !allSelected && sortedData.some((r) => selectedIds.has(getRowId(r)));
+    !allSelected && visibleDataRows.some((r) => selectedIds.has(getRowId(r)));
 
   const toggleAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(sortedData.map(getRowId)));
+      setSelectedIds(new Set(visibleDataRows.map(getRowId)));
     }
   };
 
@@ -510,11 +677,68 @@ function DataGridInner<T>(
     setEditDraft({});
   };
 
-  const totalHeight = sortedData.length * rowHeight;
-  const visibleCount = Math.ceil(height / rowHeight) + overscan * 2;
-  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
-  const endIndex = Math.min(sortedData.length, startIndex + visibleCount);
-  const visibleRows = sortedData.slice(startIndex, endIndex);
+  const resolvedGroupRowHeight = groupRowHeight ?? rowHeight;
+
+  // Offsets for the flat (group-header + data) array, since group headers
+  // and data rows can have different heights once grouping is active.
+  const rowOffsets: number[] | null = groupedMap
+    ? (() => {
+        const offsets = new Array<number>(flatEntries.length);
+        let acc = 0;
+        for (let i = 0; i < flatEntries.length; i++) {
+          offsets[i] = acc;
+          acc +=
+            flatEntries[i]!.type === "group"
+              ? resolvedGroupRowHeight
+              : rowHeight;
+        }
+        return offsets;
+      })()
+    : null;
+
+  function findIndexAtOffset(offsets: number[], target: number): number {
+    let lo = 0;
+    let hi = offsets.length - 1;
+    let ans = 0;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (offsets[mid]! <= target) {
+        ans = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return ans;
+  }
+
+  let totalHeight: number;
+  let startIndex: number;
+  let endIndex: number;
+
+  if (rowOffsets) {
+    totalHeight = rowOffsets.length
+      ? rowOffsets[rowOffsets.length - 1]! +
+        (flatEntries[flatEntries.length - 1]!.type === "group"
+          ? resolvedGroupRowHeight
+          : rowHeight)
+      : 0;
+    const rawStart = rowOffsets.length
+      ? findIndexAtOffset(rowOffsets, scrollTop)
+      : 0;
+    startIndex = Math.max(0, rawStart - overscan);
+    const rawEnd = rowOffsets.length
+      ? findIndexAtOffset(rowOffsets, scrollTop + height) + 1
+      : 0;
+    endIndex = Math.min(flatEntries.length, rawEnd + overscan);
+  } else {
+    totalHeight = sortedData.length * rowHeight;
+    const visibleCount = Math.ceil(height / rowHeight) + overscan * 2;
+    startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+    endIndex = Math.min(flatEntries.length, startIndex + visibleCount);
+  }
+
+  const visibleEntries = flatEntries.slice(startIndex, endIndex);
 
   const totalWidth =
     (selectable ? CHECKBOX_COLUMN_WIDTH : 0) +
@@ -709,13 +933,78 @@ function DataGridInner<T>(
                 minWidth: "100%",
               }}
             >
-              {visibleRows.map((rowData, i) => {
+              {visibleEntries.map((entry, i) => {
                 const index = startIndex + i;
+                const top = rowOffsets
+                  ? rowOffsets[index]!
+                  : index * rowHeight;
+
+                if (entry.type === "group") {
+                  const isExpanded = !entry.collapsed;
+                  const groupLabelText = groupColumn
+                    ? typeof groupColumn.header === "string"
+                      ? groupColumn.header
+                      : groupColumn.key
+                    : groupBy;
+                  const aggregateColumns = columns.filter((c) => c.aggregate);
+                  return (
+                    <div
+                      key={`group-${entry.key}`}
+                      className={groupRow}
+                      style={{
+                        top,
+                        height: resolvedGroupRowHeight,
+                        width: totalWidth,
+                      }}
+                      role="row"
+                    >
+                      <button
+                        type="button"
+                        className={groupChevron}
+                        data-expanded={isExpanded || undefined}
+                        onClick={() =>
+                          toggleGroupExpanded(
+                            entry.key,
+                            Array.from(groupedMap!.keys())
+                          )
+                        }
+                        aria-label={
+                          isExpanded
+                            ? `Collapse group ${entry.key}`
+                            : `Expand group ${entry.key}`
+                        }
+                      >
+                        ›
+                      </button>
+                      <span className={groupLabel}>
+                        {groupLabelText}: {entry.key}
+                      </span>
+                      <span className={groupCount}>
+                        {entry.rows.length} row
+                        {entry.rows.length === 1 ? "" : "s"}
+                      </span>
+                      {aggregateColumns.length > 0 ? (
+                        <span className={groupAggregates}>
+                          {aggregateColumns.map((c) => (
+                            <span key={c.key} className={groupAggregateItem}>
+                              {typeof c.header === "string"
+                                ? c.header
+                                : c.key}
+                              : {computeAggregate(c, entry.rows)}
+                            </span>
+                          ))}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                }
+
+                const rowData = entry.row;
                 const id = getRowId(rowData);
                 const isSelected = selectedIds.has(id);
                 const isEditing = editingRowId === id;
                 const style: CSSProperties = {
-                  top: index * rowHeight,
+                  top,
                   height: rowHeight,
                   width: totalWidth,
                 };

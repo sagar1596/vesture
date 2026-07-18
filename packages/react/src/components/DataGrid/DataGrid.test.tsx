@@ -595,4 +595,170 @@ describe("DataGrid", () => {
       ]);
     });
   });
+
+  describe("row grouping", () => {
+    interface Employee {
+      id: string;
+      name: string;
+      department: string;
+      salary: number;
+    }
+
+    const employees: Employee[] = [
+      { id: "e0", name: "Ada", department: "Engineering", salary: 100 },
+      { id: "e1", name: "Alan", department: "Engineering", salary: 200 },
+      { id: "e2", name: "Grace", department: "Design", salary: 150 },
+      { id: "e3", name: "Linus", department: "Design", salary: 50 },
+      { id: "e4", name: "Margaret", department: "Sales", salary: 350 },
+    ];
+
+    const groupableColumns: DataGridColumn<Employee>[] = [
+      { key: "name", header: "Name", accessor: (r) => r.name },
+      {
+        key: "department",
+        header: "Department",
+        accessor: (r) => r.department,
+      },
+      {
+        key: "salary",
+        header: "Salary",
+        accessor: (r) => r.salary,
+        aggregate: "sum",
+      },
+    ];
+
+    it("partitions data into groups by the groupBy column's value", () => {
+      render(
+        <DataGrid
+          columns={groupableColumns}
+          data={employees}
+          getRowId={(r) => r.id}
+          groupBy="department"
+          height={400}
+        />
+      );
+
+      expect(
+        screen.getByText("Department: Engineering", { exact: false })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Department: Design", { exact: false })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Department: Sales", { exact: false })
+      ).toBeInTheDocument();
+      expect(screen.getByText("Ada")).toBeInTheDocument();
+      expect(screen.getByText("Grace")).toBeInTheDocument();
+      expect(screen.getByText("Margaret")).toBeInTheDocument();
+    });
+
+    it("collapsing a group removes its rows from the render without affecting other groups", () => {
+      render(
+        <DataGrid
+          columns={groupableColumns}
+          data={employees}
+          getRowId={(r) => r.id}
+          groupBy="department"
+          height={400}
+        />
+      );
+
+      expect(screen.getByText("Ada")).toBeInTheDocument();
+      expect(screen.getByText("Grace")).toBeInTheDocument();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Collapse group Engineering" })
+      );
+
+      expect(screen.queryByText("Ada")).not.toBeInTheDocument();
+      expect(screen.queryByText("Alan")).not.toBeInTheDocument();
+      // Design group is untouched.
+      expect(screen.getByText("Grace")).toBeInTheDocument();
+      expect(screen.getByText("Linus")).toBeInTheDocument();
+
+      // Row count drops by exactly the collapsed group's 2 data rows.
+      const rowsAfterCollapse = screen.getAllByRole("row");
+      fireEvent.click(
+        screen.getByRole("button", { name: "Expand group Engineering" })
+      );
+      const rowsAfterExpand = screen.getAllByRole("row");
+      expect(rowsAfterExpand.length).toBe(rowsAfterCollapse.length + 2);
+    });
+
+    it("computes sum, count, and custom aggregate functions per group", () => {
+      const customColumns: DataGridColumn<Employee>[] = [
+        ...groupableColumns,
+        {
+          key: "count",
+          header: "Count",
+          accessor: () => 0,
+          aggregate: "count",
+        },
+        {
+          key: "custom",
+          header: "Custom",
+          accessor: () => 0,
+          aggregate: (rows) => `custom:${rows.length}`,
+        },
+      ];
+
+      render(
+        <DataGrid
+          columns={customColumns}
+          data={employees}
+          getRowId={(r) => r.id}
+          groupBy="department"
+          height={400}
+        />
+      );
+
+      // Engineering: salaries 100 + 200 = 300, count 2
+      const engineeringGroupRow = screen
+        .getByText("Department: Engineering", { exact: false })
+        .closest('[role="row"]') as HTMLElement;
+      expect(
+        within(engineeringGroupRow).getByText("Salary: 300", { exact: false })
+      ).toBeInTheDocument();
+      expect(
+        within(engineeringGroupRow).getByText("Count: 2", { exact: false })
+      ).toBeInTheDocument();
+      expect(
+        within(engineeringGroupRow).getByText("Custom: custom:2", {
+          exact: false,
+        })
+      ).toBeInTheDocument();
+
+      // Design: salaries 150 + 50 = 200
+      const designGroupRow = screen
+        .getByText("Department: Design", { exact: false })
+        .closest('[role="row"]') as HTMLElement;
+      expect(
+        within(designGroupRow).getByText("Salary: 200", { exact: false })
+      ).toBeInTheDocument();
+    });
+
+    it("select-all only selects visible (non-collapsed-group) rows", () => {
+      const onSelectionChange = vi.fn();
+      render(
+        <DataGrid
+          columns={groupableColumns}
+          data={employees}
+          getRowId={(r) => r.id}
+          groupBy="department"
+          height={400}
+          selectable
+          onSelectionChange={onSelectionChange}
+        />
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Collapse group Sales" })
+      );
+
+      fireEvent.click(screen.getByRole("checkbox", { name: "Select all rows" }));
+      expect(onSelectionChange).toHaveBeenCalledWith(
+        new Set(["e0", "e1", "e2", "e3"])
+      );
+    });
+  });
 });

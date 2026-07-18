@@ -311,6 +311,76 @@ export const paginationFooter = style({
   borderTopColor: vars.color.border,
 });
 
+// --- Row grouping ---
+
+export const groupRow = style({
+  position: "absolute",
+  left: 0,
+  right: 0,
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space.sm,
+  paddingLeft: vars.space.md,
+  paddingRight: vars.space.md,
+  boxSizing: "border-box",
+  background: vars.color.surface,
+  borderBottomWidth: vars.border.width,
+  borderBottomStyle: vars.border.style,
+  borderBottomColor: vars.color.border,
+  fontWeight: vars.font.weightMedium,
+});
+
+export const groupChevron = style({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: vars.space.lg,
+  height: vars.space.lg,
+  flexShrink: 0,
+  border: "none",
+  background: "transparent",
+  color: vars.color.textMuted,
+  cursor: "pointer",
+  fontSize: vars.font.sizeMd,
+  lineHeight: 1,
+  transitionProperty: "transform",
+  transitionDuration: vars.motion.durationFast,
+  transitionTimingFunction: vars.motion.easing,
+  selectors: {
+    "&[data-expanded]": {
+      transform: "rotate(90deg)",
+    },
+  },
+});
+
+export const groupLabel = style({
+  color: vars.color.text,
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});
+
+export const groupCount = style({
+  color: vars.color.textMuted,
+  fontWeight: vars.font.weightRegular,
+  fontSize: vars.font.sizeXs,
+  flexShrink: 0,
+});
+
+export const groupAggregates = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space.md,
+  marginLeft: "auto",
+  fontWeight: vars.font.weightRegular,
+  fontSize: vars.font.sizeXs,
+  color: vars.color.textMuted,
+});
+
+export const groupAggregateItem = style({
+  whiteSpace: "nowrap",
+});
+
 export const editInput = style({
   width: "100%",
   fontFamily: "inherit",

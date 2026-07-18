@@ -369,6 +369,52 @@ function fetchEmployeesPage(
   });
 }
 
+const groupableColumns: DataGridColumn<Employee>[] = [
+  {
+    key: "name",
+    header: "Name",
+    accessor: (r) => r.name,
+    width: 180,
+  },
+  {
+    key: "department",
+    header: "Department",
+    accessor: (r) => r.department,
+    width: 160,
+  },
+  {
+    key: "status",
+    header: "Status",
+    accessor: (r) => r.status,
+    width: 120,
+    render: (r) => (
+      <Badge variant={r.status === "active" ? "success" : "default"}>
+        {r.status}
+      </Badge>
+    ),
+  },
+  {
+    key: "salary",
+    header: "Salary",
+    accessor: (r) => r.salary,
+    width: 140,
+    aggregate: "sum",
+    render: (r) => `$${r.salary.toLocaleString()}`,
+  },
+];
+
+export const WithGrouping: Story = {
+  render: () => (
+    <DataGrid
+      columns={groupableColumns}
+      data={employees.slice(0, 40)}
+      getRowId={(r) => r.id}
+      height={480}
+      groupBy="department"
+    />
+  ),
+};
+
 export const ServerSide: Story = {
   render: () => {
     const [page, setPage] = useState(1);
