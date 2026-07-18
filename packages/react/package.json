@@ -1,10 +1,10 @@
 {
   "name": "@vesture/react",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "React component library for Vesture, themed via @vesture/tokens.",
   "type": "module",
   "license": "MIT",
-  "author": "Vesture Contributors",
+  "author": "Sagar Bhat",
   "keywords": [
     "react",
     "components",
@@ -12,7 +12,7 @@
     "design-system",
     "vesture"
   ],
-  "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/react#readme",
+  "homepage": "https://www.vesture.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sagar1596/vesture.git",
