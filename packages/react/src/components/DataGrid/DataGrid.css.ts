@@ -261,6 +261,23 @@ export const filterInput = style({
   },
 });
 
+// --- Toolbar ---
+
+export const toolbar = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  gap: vars.space.sm,
+  paddingTop: vars.space.sm,
+  paddingBottom: vars.space.sm,
+  paddingLeft: vars.space.md,
+  paddingRight: vars.space.md,
+  background: vars.color.surface,
+  borderBottomWidth: vars.border.width,
+  borderBottomStyle: vars.border.style,
+  borderBottomColor: vars.color.border,
+});
+
 // --- Server-side loading overlay ---
 
 export const gridWrapper = style({

@@ -83,3 +83,20 @@ that point outside the site's project root.
   built on the `DropdownMenu` + `DatePicker` patterns above). These are the
   best current reference examples of the conventions in this file — read
   their source before adding another component.
+- **2026-07-18**: Added Excel export to `DataGrid`. `xlsx` (SheetJS) is a
+  dependency but only ever `import()`-ed dynamically inside `exportToExcel`,
+  so it stays out of the base bundle for consumers who don't export.
+  `DataGrid` is now `forwardRef<DataGridHandle<T>, DataGridProps<T>>` (was a
+  plain function component) — exposes `exportToExcel({ filename?, sheetName?
+  })` via `useImperativeHandle`, built from whatever the final post-filter/
+  sort derived array is at call time (`sortedData` as of this writing), not
+  the raw `data` prop. Per-column export value resolution order:
+  `column.exportValue` → `column.accessor` → raw `row[column.key]` —
+  deliberately not `column.render`, since that returns a `ReactNode`. Note:
+  npm's published `xlsx` package is stuck at the stale 0.18.5 release with
+  unpatched advisories (prototype pollution, ReDoS); SheetJS only ships fixed
+  builds through their own CDN, so the dependency is pinned to a tarball URL
+  — `"xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"` — instead
+  of a semver range. When bumping, get the new tarball URL from
+  https://cdn.sheetjs.com and re-pin explicitly rather than switching back to
+  the npm registry name.

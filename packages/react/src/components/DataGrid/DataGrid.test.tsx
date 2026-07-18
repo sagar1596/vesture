@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import {
   fireEvent,
   render,
@@ -7,7 +8,24 @@ import {
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DataGrid } from "./DataGrid";
+import type { DataGridHandle } from "./DataGrid";
 import type { DataGridColumn } from "./types";
+
+const { aoaToSheet, bookNew, bookAppendSheet, writeFile } = vi.hoisted(() => ({
+  aoaToSheet: vi.fn(() => ({})),
+  bookNew: vi.fn(() => ({})),
+  bookAppendSheet: vi.fn(),
+  writeFile: vi.fn(),
+}));
+
+vi.mock("xlsx", () => ({
+  utils: {
+    aoa_to_sheet: aoaToSheet,
+    book_new: bookNew,
+    book_append_sheet: bookAppendSheet,
+  },
+  writeFile,
+}));
 
 interface Person {
   id: string;
@@ -399,6 +417,113 @@ describe("DataGrid", () => {
         screen.getByRole("status", { name: "Loading" })
       ).toBeInTheDocument();
       expect(screen.getByText("Person 0")).toBeInTheDocument();
+    });
+  });
+
+  describe("Excel export", () => {
+    interface Row {
+      id: string;
+      name: string;
+      age: number;
+      raw: string;
+    }
+
+    const rows: Row[] = [
+      { id: "r0", name: "Ada Lovelace", age: 36, raw: "raw-0" },
+      { id: "r1", name: "Alan Turing", age: 41, raw: "raw-1" },
+    ];
+
+    const exportColumns: DataGridColumn<Row>[] = [
+      {
+        key: "name",
+        header: "Name",
+        accessor: (r) => r.name,
+        exportValue: (r) => r.name.toUpperCase(),
+      },
+      { key: "age", header: "Age", accessor: (r) => r.age },
+      { key: "raw", header: "Raw" },
+    ];
+
+    it("does not render the toolbar export button by default", () => {
+      render(<DataGrid columns={columns} data={people.slice(0, 2)} getRowId={(r) => r.id} />);
+      expect(
+        screen.queryByRole("button", { name: "Export" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders a toolbar export button when enableExport is true and triggers export on click", async () => {
+      render(
+        <DataGrid
+          columns={exportColumns}
+          data={rows}
+          getRowId={(r) => r.id}
+          enableExport
+        />
+      );
+
+      const exportButton = screen.getByRole("button", { name: "Export" });
+      fireEvent.click(exportButton);
+
+      await waitFor(() => {
+        expect(writeFile).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("exports via the imperative ref handle using the value-resolution fallback order: exportValue > accessor > raw", async () => {
+      const ref = createRef<DataGridHandle<Row>>();
+      render(
+        <DataGrid
+          columns={exportColumns}
+          data={rows}
+          getRowId={(r) => r.id}
+          ref={ref}
+        />
+      );
+
+      await ref.current!.exportToExcel({
+        filename: "custom.xlsx",
+        sheetName: "Custom",
+      });
+
+      expect(aoaToSheet).toHaveBeenCalledWith([
+        ["Name", "Age", "Raw"],
+        ["ADA LOVELACE", 36, "raw-0"],
+        ["ALAN TURING", 41, "raw-1"],
+      ]);
+      expect(bookAppendSheet).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        "Custom"
+      );
+      expect(writeFile).toHaveBeenCalledWith(expect.anything(), "custom.xlsx");
+    });
+
+    it("respects the current filtered/sorted view, not the raw data prop, when exporting", async () => {
+      const sortableExportColumns: DataGridColumn<Row>[] = [
+        { key: "name", header: "Name", sortable: true, accessor: (r) => r.name },
+        { key: "age", header: "Age", sortable: true, accessor: (r) => r.age },
+      ];
+      const ref = createRef<DataGridHandle<Row>>();
+      render(
+        <DataGrid
+          columns={sortableExportColumns}
+          data={rows}
+          getRowId={(r) => r.id}
+          ref={ref}
+        />
+      );
+
+      const ageHeader = screen.getByRole("columnheader", { name: /Age/ });
+      fireEvent.click(within(ageHeader).getByRole("button")); // ascending
+      fireEvent.click(within(ageHeader).getByRole("button")); // descending
+
+      await ref.current!.exportToExcel();
+
+      expect(aoaToSheet).toHaveBeenCalledWith([
+        ["Name", "Age"],
+        ["Alan Turing", 41],
+        ["Ada Lovelace", 36],
+      ]);
     });
   });
 });

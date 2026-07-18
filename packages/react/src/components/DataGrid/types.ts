@@ -17,6 +17,8 @@ export interface DataGridColumn<T> {
   filterType?: "text" | "select";
   accessor?: (row: T) => string | number;
   render?: (row: T) => ReactNode;
+  /** Value used when exporting this column; falls back to accessor, then the raw row value. Not derived from render, since render returns a ReactNode. */
+  exportValue?: (row: T) => string | number;
 }
 
 export type SortDirection = "asc" | "desc" | null;

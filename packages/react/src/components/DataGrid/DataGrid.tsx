@@ -1,11 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type {
   CSSProperties,
+  ForwardedRef,
   InputHTMLAttributes,
   PointerEvent as ReactPointerEvent,
   ReactElement,
   ReactNode,
 } from "react";
+import { Button } from "../Button";
 import { Pagination } from "../Pagination";
 import { Spinner } from "../Spinner";
 import {
@@ -34,6 +44,7 @@ import {
   row as rowClass,
   sortIcon,
   srOnly,
+  toolbar as toolbarClass,
 } from "./DataGrid.css";
 import type {
   DataGridColumn,
@@ -121,6 +132,31 @@ export interface DataGridProps<T> {
   page?: number;
   pageSize?: number;
   onPageChange?: (page: number) => void;
+  /** Renders an "Export" button in the grid's toolbar that exports the current view to Excel. */
+  enableExport?: boolean;
+}
+
+export interface DataGridExportOptions {
+  filename?: string;
+  sheetName?: string;
+}
+
+export interface DataGridHandle<T> {
+  exportToExcel: (options?: DataGridExportOptions) => Promise<void>;
+}
+
+function getExportValue<T>(column: DataGridColumn<T>, row: T): string | number {
+  if (column.exportValue) {
+    return column.exportValue(row);
+  }
+  if (column.accessor) {
+    return column.accessor(row);
+  }
+  return (row as Record<string, unknown>)[column.key] as string | number;
+}
+
+function getExportHeader<T>(column: DataGridColumn<T>): string {
+  return typeof column.header === "string" ? column.header : column.key;
 }
 
 function compareValues(a: string | number, b: string | number): number {
@@ -137,29 +173,33 @@ function getCellValue<T>(column: DataGridColumn<T>, row: T): string | number {
   return (row as Record<string, unknown>)[column.key] as string | number;
 }
 
-export function DataGrid<T>({
-  columns,
-  data,
-  getRowId,
-  rowHeight = 40,
-  height = 400,
-  overscan = 5,
-  selectable = false,
-  selectedIds: controlledSelectedIds,
-  onSelectionChange,
-  sort: controlledSort,
-  onSortChange,
-  filters: controlledFilters,
-  onFilterChange,
-  emptyMessage = "No data",
-  onRowEdit,
-  serverSide = false,
-  loading = false,
-  totalRowCount,
-  page,
-  pageSize,
-  onPageChange,
-}: DataGridProps<T>): ReactElement {
+function DataGridInner<T>(
+  {
+    columns,
+    data,
+    getRowId,
+    rowHeight = 40,
+    height = 400,
+    overscan = 5,
+    selectable = false,
+    selectedIds: controlledSelectedIds,
+    onSelectionChange,
+    sort: controlledSort,
+    onSortChange,
+    filters: controlledFilters,
+    onFilterChange,
+    emptyMessage = "No data",
+    onRowEdit,
+    serverSide = false,
+    loading = false,
+    totalRowCount,
+    page,
+    pageSize,
+    onPageChange,
+    enableExport = false,
+  }: DataGridProps<T>,
+  ref: ForwardedRef<DataGridHandle<T>>
+): ReactElement {
   const [uncontrolledSort, setUncontrolledSort] = useState<SortState | null>(
     null
   );
@@ -258,6 +298,27 @@ export function DataGrid<T>({
     );
     return sort.direction === "desc" ? sorted.reverse() : sorted;
   }, [filteredData, sort, columns, serverSide, data]);
+
+  const exportToExcel = useCallback(
+    async (options?: DataGridExportOptions) => {
+      const XLSX = await import("xlsx");
+      const headerRowValues = columns.map((column) => getExportHeader(column));
+      const rows = sortedData.map((row) =>
+        columns.map((column) => getExportValue(column, row))
+      );
+      const worksheet = XLSX.utils.aoa_to_sheet([headerRowValues, ...rows]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        options?.sheetName ?? "Sheet1"
+      );
+      XLSX.writeFile(workbook, options?.filename ?? "export.xlsx");
+    },
+    [columns, sortedData]
+  );
+
+  useImperativeHandle(ref, () => ({ exportToExcel }), [exportToExcel]);
 
   const selectFilterOptions = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -452,6 +513,19 @@ export function DataGrid<T>({
   return (
     <>
       <div className={gridWrapper}>
+        {enableExport ? (
+          <div className={toolbarClass}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void exportToExcel();
+              }}
+            >
+              Export
+            </Button>
+          </div>
+        ) : null}
         <div
           className={containerClass}
           style={{ height }}
@@ -762,3 +836,7 @@ export function DataGrid<T>({
     </>
   );
 }
+
+export const DataGrid = forwardRef(DataGridInner) as <T>(
+  props: DataGridProps<T> & { ref?: ForwardedRef<DataGridHandle<T>> }
+) => ReactElement;

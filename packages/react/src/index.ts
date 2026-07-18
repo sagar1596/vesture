@@ -111,6 +111,8 @@ export type { AlertProps, AlertVariant } from "./components/Alert";
 export { DataGrid } from "./components/DataGrid";
 export type {
   DataGridColumn,
+  DataGridExportOptions,
+  DataGridHandle,
   DataGridProps,
   SortDirection,
   SortState,

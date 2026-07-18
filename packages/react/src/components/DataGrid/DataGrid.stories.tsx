@@ -298,6 +298,18 @@ export const WithFiltering: Story = {
   ),
 };
 
+export const WithExport: Story = {
+  render: () => (
+    <DataGrid
+      columns={columns}
+      data={employees.slice(0, 20)}
+      getRowId={(r) => r.id}
+      height={400}
+      enableExport
+    />
+  ),
+};
+
 const SERVER_PAGE_SIZE = 20;
 
 function fetchEmployeesPage(
