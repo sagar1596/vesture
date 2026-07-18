@@ -309,6 +309,101 @@ function DataGridSection() {
   );
 }
 
+const filterableEmployeeColumns: DataGridColumn<Employee>[] = [
+  { key: "name", header: "Name", sortable: true, filterable: true, accessor: (r) => r.name, width: 180 },
+  { key: "role", header: "Role", sortable: true, filterable: true, accessor: (r) => r.role, width: 140 },
+  {
+    key: "department",
+    header: "Department",
+    sortable: true,
+    filterable: true,
+    filterType: "select",
+    accessor: (r) => r.department,
+    width: 160
+  },
+  { key: "status", header: "Status", sortable: true, accessor: (r) => r.status, width: 120 }
+];
+
+function DataGridFilteringSection() {
+  return (
+    <Section title="DataGrid — Filtering">
+      <Stack gap="sm">
+        <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+          Name/Role text filters, Department select filter · filters apply before sort, client-side
+        </p>
+        <DataGrid columns={filterableEmployeeColumns} data={employees} getRowId={(r) => r.id} height={360} />
+      </Stack>
+    </Section>
+  );
+}
+
+const SERVER_PAGE_SIZE = 10;
+
+function fetchEmployeesPage(
+  page: number,
+  nameFilter: string
+): Promise<{ rows: Employee[]; total: number }> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const filtered = nameFilter
+        ? employees.filter((r) => r.name.toLowerCase().includes(nameFilter.toLowerCase()))
+        : employees;
+      const start = (page - 1) * SERVER_PAGE_SIZE;
+      resolve({ rows: filtered.slice(start, start + SERVER_PAGE_SIZE), total: filtered.length });
+    }, 400);
+  });
+}
+
+function DataGridServerSideSection() {
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<{ key: string; value: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<Employee[]>([]);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const nameFilter = filters.find((f) => f.key === "name")?.value ?? "";
+    fetchEmployeesPage(page, nameFilter).then(({ rows: nextRows, total: nextTotal }) => {
+      if (cancelled) return;
+      setRows(nextRows);
+      setTotal(nextTotal);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, filters]);
+
+  return (
+    <Section title="DataGrid — Server-side">
+      <Stack gap="sm">
+        <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+          {total} matching rows · page {page} · simulated 400ms network latency
+        </p>
+        <DataGrid
+          columns={filterableEmployeeColumns}
+          data={rows}
+          getRowId={(r) => r.id}
+          height={360}
+          serverSide
+          loading={loading}
+          filters={filters}
+          onFilterChange={(next) => {
+            setFilters(next);
+            setPage(1);
+          }}
+          page={page}
+          pageSize={SERVER_PAGE_SIZE}
+          totalRowCount={total}
+          onPageChange={setPage}
+        />
+      </Stack>
+    </Section>
+  );
+}
+
 function FeedbackSection() {
   const [dismissed, setDismissed] = useState(false);
 
@@ -546,6 +641,8 @@ export function App() {
           <NavigationSection />
           <FeedbackSection />
           <DataGridSection />
+          <DataGridFilteringSection />
+          <DataGridServerSideSection />
           <ComposedFormSection />
         </Stack>
       </ToastProvider>

@@ -1,5 +1,13 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+  CSSProperties,
+  InputHTMLAttributes,
+  PointerEvent as ReactPointerEvent,
+  ReactElement,
+  ReactNode,
+} from "react";
+import { Pagination } from "../Pagination";
+import { Spinner } from "../Spinner";
 import {
   actionsCell as actionsCellClass,
   body as bodyClass,
@@ -8,10 +16,16 @@ import {
   container as containerClass,
   editInput,
   emptyState as emptyStateClass,
+  filterCell,
+  filterInput,
+  filterRow,
+  gridWrapper,
   headerButton,
   headerCell,
   headerRow,
   iconButton,
+  loadingOverlay,
+  paginationFooter,
   pinnedCell,
   pinnedHeaderCell,
   pinnedLeftEdge,
@@ -19,13 +33,67 @@ import {
   resizeHandle,
   row as rowClass,
   sortIcon,
-  srOnly
+  srOnly,
 } from "./DataGrid.css";
-import type { DataGridColumn, SortDirection, SortState } from "./types";
+import type {
+  DataGridColumn,
+  FilterState,
+  SortDirection,
+  SortState,
+} from "./types";
 
 const DEFAULT_COLUMN_WIDTH = 160;
 const CHECKBOX_COLUMN_WIDTH = 44;
 const ACTIONS_COLUMN_WIDTH = 72;
+const FILTER_DEBOUNCE_MS = 200;
+
+function useDebouncedValue<V>(value: V, delay: number): V {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+interface FilterTextInputProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function FilterTextInput({
+  value,
+  onChange,
+  ...rest
+}: FilterTextInputProps): ReactElement {
+  const [draft, setDraft] = useState(value);
+  const debounced = useDebouncedValue(draft, FILTER_DEBOUNCE_MS);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    onChangeRef.current(debounced);
+  }, [debounced]);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  return (
+    <input
+      type="text"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      {...rest}
+    />
+  );
+}
 
 export interface DataGridProps<T> {
   columns: DataGridColumn<T>[];
@@ -39,9 +107,20 @@ export interface DataGridProps<T> {
   onSelectionChange?: (ids: Set<string>) => void;
   sort?: SortState | null;
   onSortChange?: (sort: SortState | null) => void;
+  filters?: FilterState[];
+  onFilterChange?: (filters: FilterState[]) => void;
   emptyMessage?: ReactNode;
   /** Enables inline row editing; called when a row's edit is saved. */
   onRowEdit?: (rowId: string, values: Record<string, string>) => void;
+  /** When true, `data` is treated as already sorted/filtered/paginated by the caller. */
+  serverSide?: boolean;
+  /** Shows a loading overlay over the grid without unmounting existing rows. */
+  loading?: boolean;
+  /** True total row count on the server, used for pagination controls. */
+  totalRowCount?: number;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
 }
 
 function compareValues(a: string | number, b: string | number): number {
@@ -70,13 +149,30 @@ export function DataGrid<T>({
   onSelectionChange,
   sort: controlledSort,
   onSortChange,
+  filters: controlledFilters,
+  onFilterChange,
   emptyMessage = "No data",
-  onRowEdit
+  onRowEdit,
+  serverSide = false,
+  loading = false,
+  totalRowCount,
+  page,
+  pageSize,
+  onPageChange,
 }: DataGridProps<T>): ReactElement {
-  const [uncontrolledSort, setUncontrolledSort] = useState<SortState | null>(null);
-  const [uncontrolledSelectedIds, setUncontrolledSelectedIds] = useState<Set<string>>(() => new Set());
+  const [uncontrolledSort, setUncontrolledSort] = useState<SortState | null>(
+    null
+  );
+  const [uncontrolledFilters, setUncontrolledFilters] = useState<FilterState[]>(
+    []
+  );
+  const [uncontrolledSelectedIds, setUncontrolledSelectedIds] = useState<
+    Set<string>
+  >(() => new Set());
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() =>
-    Object.fromEntries(columns.map((c) => [c.key, c.width ?? DEFAULT_COLUMN_WIDTH]))
+    Object.fromEntries(
+      columns.map((c) => [c.key, c.width ?? DEFAULT_COLUMN_WIDTH])
+    )
   );
   const [scrollTop, setScrollTop] = useState(0);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
@@ -85,6 +181,8 @@ export function DataGrid<T>({
   const editingEnabled = Boolean(onRowEdit);
 
   const sort = controlledSort !== undefined ? controlledSort : uncontrolledSort;
+  const filters =
+    controlledFilters !== undefined ? controlledFilters : uncontrolledFilters;
   const selectedIds = controlledSelectedIds ?? uncontrolledSelectedIds;
 
   const setSort = (next: SortState | null) => {
@@ -93,6 +191,23 @@ export function DataGrid<T>({
     }
     onSortChange?.(next);
   };
+
+  const setFilters = (next: FilterState[]) => {
+    if (controlledFilters === undefined) {
+      setUncontrolledFilters(next);
+    }
+    onFilterChange?.(next);
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    const next = value
+      ? [...filters.filter((f) => f.key !== key), { key, value }]
+      : filters.filter((f) => f.key !== key);
+    setFilters(next);
+  };
+
+  const getFilterValue = (key: string): string =>
+    filters.find((f) => f.key === key)?.value ?? "";
 
   const setSelectedIds = (next: Set<string>) => {
     if (controlledSelectedIds === undefined) {
@@ -112,20 +227,60 @@ export function DataGrid<T>({
     }
   };
 
-  const sortedData = useMemo(() => {
-    if (!sort || !sort.direction) {
+  const filteredData = useMemo(() => {
+    if (serverSide || filters.length === 0) {
       return data;
+    }
+    return data.filter((row) =>
+      filters.every((f) => {
+        if (!f.value) return true;
+        const column = columns.find((c) => c.key === f.key);
+        if (!column) return true;
+        const cellValue = String(getCellValue(column, row) ?? "").toLowerCase();
+        return cellValue.includes(f.value.toLowerCase());
+      })
+    );
+  }, [data, filters, columns, serverSide]);
+
+  const sortedData = useMemo(() => {
+    if (serverSide) {
+      return data;
+    }
+    if (!sort || !sort.direction) {
+      return filteredData;
     }
     const column = columns.find((c) => c.key === sort.key);
     if (!column) {
-      return data;
+      return filteredData;
     }
-    const sorted = [...data].sort((a, b) => compareValues(getCellValue(column, a), getCellValue(column, b)));
+    const sorted = [...filteredData].sort((a, b) =>
+      compareValues(getCellValue(column, a), getCellValue(column, b))
+    );
     return sort.direction === "desc" ? sorted.reverse() : sorted;
-  }, [data, sort, columns]);
+  }, [filteredData, sort, columns, serverSide, data]);
 
-  const allSelected = sortedData.length > 0 && sortedData.every((r) => selectedIds.has(getRowId(r)));
-  const someSelected = !allSelected && sortedData.some((r) => selectedIds.has(getRowId(r)));
+  const selectFilterOptions = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const column of columns) {
+      if (!column.filterable || column.filterType !== "select") continue;
+      const values = new Set<string>();
+      for (const row of data) {
+        values.add(String(getCellValue(column, row) ?? ""));
+      }
+      map[column.key] = Array.from(values).sort();
+    }
+    return map;
+  }, [columns, data]);
+
+  const hasFilterableColumns = columns.some((c) => c.filterable);
+  const showPagination =
+    page !== undefined && pageSize !== undefined && onPageChange !== undefined;
+
+  const allSelected =
+    sortedData.length > 0 &&
+    sortedData.every((r) => selectedIds.has(getRowId(r)));
+  const someSelected =
+    !allSelected && sortedData.some((r) => selectedIds.has(getRowId(r)));
 
   const toggleAll = () => {
     if (allSelected) {
@@ -145,7 +300,11 @@ export function DataGrid<T>({
     setSelectedIds(next);
   };
 
-  const resizeState = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+  const resizeState = useRef<{
+    key: string;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
 
   const handleResizeStart = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>, column: DataGridColumn<T>) => {
@@ -155,7 +314,7 @@ export function DataGrid<T>({
       resizeState.current = {
         key: column.key,
         startX: event.clientX,
-        startWidth: columnWidths[column.key] ?? DEFAULT_COLUMN_WIDTH
+        startWidth: columnWidths[column.key] ?? DEFAULT_COLUMN_WIDTH,
       };
       const target = event.currentTarget;
       target.setPointerCapture(event.pointerId);
@@ -163,22 +322,29 @@ export function DataGrid<T>({
     [columnWidths]
   );
 
-  const handleResizeMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    const state = resizeState.current;
-    if (!state) return;
-    const delta = event.clientX - state.startX;
-    const minWidth = columns.find((c) => c.key === state.key)?.minWidth ?? 60;
-    const nextWidth = Math.max(minWidth, state.startWidth + delta);
-    setColumnWidths((prev) => ({ ...prev, [state.key]: nextWidth }));
-  }, [columns]);
+  const handleResizeMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const state = resizeState.current;
+      if (!state) return;
+      const delta = event.clientX - state.startX;
+      const minWidth = columns.find((c) => c.key === state.key)?.minWidth ?? 60;
+      const nextWidth = Math.max(minWidth, state.startWidth + delta);
+      setColumnWidths((prev) => ({ ...prev, [state.key]: nextWidth }));
+    },
+    [columns]
+  );
 
-  const handleResizeEnd = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    resizeState.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-  }, []);
+  const handleResizeEnd = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      resizeState.current = null;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    },
+    []
+  );
 
   const widthOf = useCallback(
-    (column: DataGridColumn<T>) => columnWidths[column.key] ?? column.width ?? DEFAULT_COLUMN_WIDTH,
+    (column: DataGridColumn<T>) =>
+      columnWidths[column.key] ?? column.width ?? DEFAULT_COLUMN_WIDTH,
     [columnWidths]
   );
 
@@ -211,11 +377,13 @@ export function DataGrid<T>({
       leftOffsets,
       rightOffsets,
       lastLeftKey: leftPinned[leftPinned.length - 1]?.key,
-      firstRightKey: rightPinned[0]?.key
+      firstRightKey: rightPinned[0]?.key,
     };
   }, [columns, selectable, editingEnabled, widthOf]);
 
-  const pinnedStyle = (column: DataGridColumn<T>): CSSProperties | undefined => {
+  const pinnedStyle = (
+    column: DataGridColumn<T>
+  ): CSSProperties | undefined => {
     if (column.pinned === "left" && layout.leftOffsets.has(column.key)) {
       return { left: layout.leftOffsets.get(column.key) };
     }
@@ -282,176 +450,315 @@ export function DataGrid<T>({
     columns.reduce((sum, c) => sum + widthOf(c), 0);
 
   return (
-    <div
-      className={containerClass}
-      style={{ height }}
-      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-      role="table"
-    >
-      <div className={headerRow} style={{ width: totalWidth, minWidth: "100%" }} role="row">
-        {selectable ? (
-          <div className={[checkboxCellClass, pinnedHeaderCell].join(" ")} style={{ left: 0 }} role="columnheader">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = someSelected;
-              }}
-              onChange={toggleAll}
-              aria-label="Select all rows"
-            />
-          </div>
-        ) : null}
-        {layout.ordered.map((column) => {
-          const width = widthOf(column);
-          const isSorted = sort?.key === column.key;
-          const direction: SortDirection = isSorted ? sort!.direction : null;
-          return (
-            <div
-              key={column.key}
-              className={[headerCell, headerPinnedClass(column)].filter(Boolean).join(" ")}
-              style={{ width, ...pinnedStyle(column) }}
-              role="columnheader"
-              aria-sort={
-                direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none"
-              }
-            >
-              {column.sortable ? (
-                <button type="button" className={headerButton} onClick={() => handleSortClick(column)}>
-                  {column.header}
-                  <span className={sortIcon} aria-hidden="true">
-                    {direction === "asc" ? "▲" : direction === "desc" ? "▼" : ""}
-                  </span>
-                </button>
-              ) : (
-                column.header
-              )}
-              {column.resizable !== false ? (
+    <>
+      <div className={gridWrapper}>
+        <div
+          className={containerClass}
+          style={{ height }}
+          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+          role="table"
+        >
+          <div
+            className={headerRow}
+            style={{ width: totalWidth, minWidth: "100%" }}
+            role="row"
+          >
+            {selectable ? (
+              <div
+                className={[checkboxCellClass, pinnedHeaderCell].join(" ")}
+                style={{ left: 0 }}
+                role="columnheader"
+              >
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={toggleAll}
+                  aria-label="Select all rows"
+                />
+              </div>
+            ) : null}
+            {layout.ordered.map((column) => {
+              const width = widthOf(column);
+              const isSorted = sort?.key === column.key;
+              const direction: SortDirection = isSorted
+                ? sort!.direction
+                : null;
+              return (
                 <div
-                  className={resizeHandle}
-                  onPointerDown={(e) => handleResizeStart(e, column)}
-                  onPointerMove={handleResizeMove}
-                  onPointerUp={handleResizeEnd}
-                  role="separator"
-                  aria-orientation="vertical"
-                  aria-label={`Resize ${String(column.header)} column`}
+                  key={column.key}
+                  className={[headerCell, headerPinnedClass(column)]
+                    .filter(Boolean)
+                    .join(" ")}
+                  style={{ width, ...pinnedStyle(column) }}
+                  role="columnheader"
+                  aria-sort={
+                    direction === "asc"
+                      ? "ascending"
+                      : direction === "desc"
+                      ? "descending"
+                      : "none"
+                  }
+                >
+                  {column.sortable ? (
+                    <button
+                      type="button"
+                      className={headerButton}
+                      onClick={() => handleSortClick(column)}
+                    >
+                      {column.header}
+                      <span className={sortIcon} aria-hidden="true">
+                        {direction === "asc"
+                          ? "▲"
+                          : direction === "desc"
+                          ? "▼"
+                          : ""}
+                      </span>
+                    </button>
+                  ) : (
+                    column.header
+                  )}
+                  {column.resizable !== false ? (
+                    <div
+                      className={resizeHandle}
+                      onPointerDown={(e) => handleResizeStart(e, column)}
+                      onPointerMove={handleResizeMove}
+                      onPointerUp={handleResizeEnd}
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label={`Resize ${String(column.header)} column`}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+            {editingEnabled ? (
+              <div
+                className={[actionsCellClass, pinnedHeaderCell].join(" ")}
+                style={{ right: 0 }}
+                role="columnheader"
+              >
+                <span className={srOnly}>Actions</span>
+              </div>
+            ) : null}
+          </div>
+
+          {hasFilterableColumns ? (
+            <div
+              className={filterRow}
+              style={{ width: totalWidth, minWidth: "100%" }}
+              role="row"
+            >
+              {selectable ? (
+                <div
+                  className={[checkboxCellClass, pinnedHeaderCell].join(" ")}
+                  style={{ left: 0 }}
+                  role="cell"
+                />
+              ) : null}
+              {layout.ordered.map((column) => {
+                const width = widthOf(column);
+                return (
+                  <div
+                    key={column.key}
+                    className={[filterCell, headerPinnedClass(column)]
+                      .filter(Boolean)
+                      .join(" ")}
+                    style={{ width, ...pinnedStyle(column) }}
+                    role="cell"
+                  >
+                    {column.filterable ? (
+                      column.filterType === "select" ? (
+                        <select
+                          className={filterInput}
+                          value={getFilterValue(column.key)}
+                          onChange={(e) =>
+                            handleFilterChange(column.key, e.target.value)
+                          }
+                          aria-label={`Filter ${String(column.header)}`}
+                        >
+                          <option value="">All</option>
+                          {(selectFilterOptions[column.key] ?? []).map(
+                            (value) => (
+                              <option key={value} value={value}>
+                                {value}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      ) : (
+                        <FilterTextInput
+                          className={filterInput}
+                          value={getFilterValue(column.key)}
+                          onChange={(value) =>
+                            handleFilterChange(column.key, value)
+                          }
+                          placeholder={`Filter ${String(column.header)}`}
+                          aria-label={`Filter ${String(column.header)}`}
+                        />
+                      )
+                    ) : null}
+                  </div>
+                );
+              })}
+              {editingEnabled ? (
+                <div
+                  className={[actionsCellClass, pinnedHeaderCell].join(" ")}
+                  style={{ right: 0 }}
+                  role="cell"
                 />
               ) : null}
             </div>
-          );
-        })}
-        {editingEnabled ? (
-          <div
-            className={[actionsCellClass, pinnedHeaderCell].join(" ")}
-            style={{ right: 0 }}
-            role="columnheader"
-          >
-            <span className={srOnly}>Actions</span>
+          ) : null}
+
+          {sortedData.length === 0 ? (
+            <div className={emptyStateClass}>{emptyMessage}</div>
+          ) : (
+            <div
+              className={bodyClass}
+              style={{
+                height: totalHeight,
+                width: totalWidth,
+                minWidth: "100%",
+              }}
+            >
+              {visibleRows.map((rowData, i) => {
+                const index = startIndex + i;
+                const id = getRowId(rowData);
+                const isSelected = selectedIds.has(id);
+                const isEditing = editingRowId === id;
+                const style: CSSProperties = {
+                  top: index * rowHeight,
+                  height: rowHeight,
+                  width: totalWidth,
+                };
+
+                return (
+                  <div
+                    key={id}
+                    className={rowClass}
+                    style={style}
+                    role="row"
+                    data-selected={isSelected || undefined}
+                    data-editing={isEditing || undefined}
+                  >
+                    {selectable ? (
+                      <div
+                        className={[checkboxCellClass, pinnedCell].join(" ")}
+                        style={{ left: 0 }}
+                        role="cell"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleRow(id)}
+                          aria-label={`Select row ${index + 1}`}
+                        />
+                      </div>
+                    ) : null}
+                    {layout.ordered.map((column) => (
+                      <div
+                        key={column.key}
+                        className={[cellClass, pinnedClass(column)]
+                          .filter(Boolean)
+                          .join(" ")}
+                        style={{
+                          width: widthOf(column),
+                          ...pinnedStyle(column),
+                        }}
+                        role="cell"
+                      >
+                        {isEditing && column.editable ? (
+                          <input
+                            type="text"
+                            className={editInput}
+                            value={editDraft[column.key] ?? ""}
+                            onChange={(e) =>
+                              setEditDraft((prev) => ({
+                                ...prev,
+                                [column.key]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveEditing();
+                              if (e.key === "Escape") cancelEditing();
+                            }}
+                            aria-label={`Edit ${String(column.header)}`}
+                            autoFocus={
+                              column.key ===
+                              columns.find((c) => c.editable)?.key
+                            }
+                          />
+                        ) : column.render ? (
+                          column.render(rowData)
+                        ) : (
+                          String(getCellValue(column, rowData) ?? "")
+                        )}
+                      </div>
+                    ))}
+                    {editingEnabled ? (
+                      <div
+                        className={[actionsCellClass, pinnedCell].join(" ")}
+                        style={{ right: 0 }}
+                        role="cell"
+                      >
+                        {isEditing ? (
+                          <>
+                            <button
+                              type="button"
+                              className={iconButton}
+                              onClick={saveEditing}
+                              aria-label={`Save row ${index + 1}`}
+                            >
+                              ✓
+                            </button>
+                            <button
+                              type="button"
+                              className={iconButton}
+                              onClick={cancelEditing}
+                              aria-label={`Cancel editing row ${index + 1}`}
+                            >
+                              ✕
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            className={iconButton}
+                            onClick={() => startEditing(rowData)}
+                            aria-label={`Edit row ${index + 1}`}
+                          >
+                            ✎
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {loading ? (
+          <div className={loadingOverlay}>
+            <Spinner size="md" />
           </div>
         ) : null}
       </div>
-
-      {sortedData.length === 0 ? (
-        <div className={emptyStateClass}>{emptyMessage}</div>
-      ) : (
-        <div className={bodyClass} style={{ height: totalHeight, width: totalWidth, minWidth: "100%" }}>
-          {visibleRows.map((rowData, i) => {
-            const index = startIndex + i;
-            const id = getRowId(rowData);
-            const isSelected = selectedIds.has(id);
-            const isEditing = editingRowId === id;
-            const style: CSSProperties = { top: index * rowHeight, height: rowHeight, width: totalWidth };
-
-            return (
-              <div
-                key={id}
-                className={rowClass}
-                style={style}
-                role="row"
-                data-selected={isSelected || undefined}
-                data-editing={isEditing || undefined}
-              >
-                {selectable ? (
-                  <div className={[checkboxCellClass, pinnedCell].join(" ")} style={{ left: 0 }} role="cell">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleRow(id)}
-                      aria-label={`Select row ${index + 1}`}
-                    />
-                  </div>
-                ) : null}
-                {layout.ordered.map((column) => (
-                  <div
-                    key={column.key}
-                    className={[cellClass, pinnedClass(column)].filter(Boolean).join(" ")}
-                    style={{ width: widthOf(column), ...pinnedStyle(column) }}
-                    role="cell"
-                  >
-                    {isEditing && column.editable ? (
-                      <input
-                        type="text"
-                        className={editInput}
-                        value={editDraft[column.key] ?? ""}
-                        onChange={(e) =>
-                          setEditDraft((prev) => ({ ...prev, [column.key]: e.target.value }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") saveEditing();
-                          if (e.key === "Escape") cancelEditing();
-                        }}
-                        aria-label={`Edit ${String(column.header)}`}
-                        autoFocus={column.key === columns.find((c) => c.editable)?.key}
-                      />
-                    ) : column.render ? (
-                      column.render(rowData)
-                    ) : (
-                      String(getCellValue(column, rowData) ?? "")
-                    )}
-                  </div>
-                ))}
-                {editingEnabled ? (
-                  <div
-                    className={[actionsCellClass, pinnedCell].join(" ")}
-                    style={{ right: 0 }}
-                    role="cell"
-                  >
-                    {isEditing ? (
-                      <>
-                        <button
-                          type="button"
-                          className={iconButton}
-                          onClick={saveEditing}
-                          aria-label={`Save row ${index + 1}`}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          type="button"
-                          className={iconButton}
-                          onClick={cancelEditing}
-                          aria-label={`Cancel editing row ${index + 1}`}
-                        >
-                          ✕
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className={iconButton}
-                        onClick={() => startEditing(rowData)}
-                        aria-label={`Edit row ${index + 1}`}
-                      >
-                        ✎
-                      </button>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
+      {showPagination ? (
+        <div className={paginationFooter}>
+          <Pagination
+            page={page!}
+            totalPages={Math.max(
+              1,
+              Math.ceil((totalRowCount ?? data.length) / pageSize!)
+            )}
+            onPageChange={onPageChange!}
+          />
         </div>
-      )}
-    </div>
+      ) : null}
+    </>
   );
 }

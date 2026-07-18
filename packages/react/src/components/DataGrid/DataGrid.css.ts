@@ -10,7 +10,7 @@ export const srOnly = style({
   overflow: "hidden",
   clip: "rect(0, 0, 0, 0)",
   whiteSpace: "nowrap",
-  border: 0
+  border: 0,
 });
 
 export const container = style({
@@ -22,7 +22,7 @@ export const container = style({
   borderRadius: vars.radius.md,
   fontFamily: vars.font.body,
   fontSize: vars.font.sizeSm,
-  color: vars.color.text
+  color: vars.color.text,
 });
 
 export const headerRow = style({
@@ -33,7 +33,7 @@ export const headerRow = style({
   background: vars.color.surface,
   borderBottomWidth: vars.border.width,
   borderBottomStyle: vars.border.style,
-  borderBottomColor: vars.color.border
+  borderBottomColor: vars.color.border,
 });
 
 export const headerCell = style({
@@ -50,7 +50,7 @@ export const headerCell = style({
   color: vars.color.textMuted,
   userSelect: "none",
   boxSizing: "border-box",
-  background: vars.color.surface
+  background: vars.color.surface,
 });
 
 export const headerButton = style({
@@ -66,14 +66,14 @@ export const headerButton = style({
   selectors: {
     "&:focus-visible": {
       boxShadow: vars.shadow.focus,
-      borderRadius: vars.radius.sm
-    }
-  }
+      borderRadius: vars.radius.sm,
+    },
+  },
 });
 
 export const sortIcon = style({
   fontSize: vars.font.sizeXs,
-  color: vars.color.textMuted
+  color: vars.color.textMuted,
 });
 
 export const resizeHandle = style({
@@ -86,13 +86,13 @@ export const resizeHandle = style({
   touchAction: "none",
   selectors: {
     "&:hover": {
-      background: vars.color.borderStrong
-    }
-  }
+      background: vars.color.borderStrong,
+    },
+  },
 });
 
 export const body = style({
-  position: "relative"
+  position: "relative",
 });
 
 export const row = style({
@@ -105,15 +105,15 @@ export const row = style({
   borderBottomColor: vars.color.border,
   selectors: {
     "&:hover": {
-      background: vars.color.surface
+      background: vars.color.surface,
     },
     "&[data-selected='true']": {
-      background: vars.color.surface
+      background: vars.color.surface,
     },
     "&[data-editing='true']": {
-      background: vars.color.surface
-    }
-  }
+      background: vars.color.surface,
+    },
+  },
 });
 
 export const cell = style({
@@ -125,7 +125,7 @@ export const cell = style({
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  boxSizing: "border-box"
+  boxSizing: "border-box",
 });
 
 export const checkboxCell = style({
@@ -134,7 +134,7 @@ export const checkboxCell = style({
   justifyContent: "center",
   flexShrink: 0,
   width: "44px",
-  boxSizing: "border-box"
+  boxSizing: "border-box",
 });
 
 export const emptyState = style({
@@ -142,7 +142,7 @@ export const emptyState = style({
   alignItems: "center",
   justifyContent: "center",
   padding: vars.space.xl,
-  color: vars.color.textMuted
+  color: vars.color.textMuted,
 });
 
 // --- Pinned (frozen) columns ---
@@ -153,29 +153,29 @@ export const pinnedCell = style({
   background: vars.color.surfaceRaised,
   selectors: {
     [`${row}:hover &`]: {
-      background: vars.color.surface
+      background: vars.color.surface,
     },
     [`${row}[data-selected='true'] &`]: {
-      background: vars.color.surface
+      background: vars.color.surface,
     },
     [`${row}[data-editing='true'] &`]: {
-      background: vars.color.surface
-    }
-  }
+      background: vars.color.surface,
+    },
+  },
 });
 
 export const pinnedHeaderCell = style({
   position: "sticky",
   zIndex: 1,
-  background: vars.color.surface
+  background: vars.color.surface,
 });
 
 export const pinnedLeftEdge = style({
-  boxShadow: "2px 0 4px -2px rgba(0, 0, 0, 0.15)"
+  boxShadow: "2px 0 4px -2px rgba(0, 0, 0, 0.15)",
 });
 
 export const pinnedRightEdge = style({
-  boxShadow: "-2px 0 4px -2px rgba(0, 0, 0, 0.15)"
+  boxShadow: "-2px 0 4px -2px rgba(0, 0, 0, 0.15)",
 });
 
 // --- Inline row editing ---
@@ -187,7 +187,7 @@ export const actionsCell = style({
   gap: vars.space.xs,
   flexShrink: 0,
   width: "72px",
-  boxSizing: "border-box"
+  boxSizing: "border-box",
 });
 
 export const iconButton = style({
@@ -206,12 +206,92 @@ export const iconButton = style({
   selectors: {
     "&:hover": {
       background: vars.color.border,
-      color: vars.color.text
+      color: vars.color.text,
     },
     "&:focus-visible": {
-      boxShadow: vars.shadow.focus
-    }
-  }
+      boxShadow: vars.shadow.focus,
+    },
+  },
+});
+
+// --- Column filtering ---
+
+export const filterRow = style({
+  position: "sticky",
+  top: 0,
+  display: "flex",
+  zIndex: 2,
+  background: vars.color.surface,
+  borderBottomWidth: vars.border.width,
+  borderBottomStyle: vars.border.style,
+  borderBottomColor: vars.color.border,
+});
+
+export const filterCell = style({
+  display: "flex",
+  alignItems: "center",
+  flexShrink: 0,
+  paddingTop: vars.space.xs,
+  paddingBottom: vars.space.xs,
+  paddingLeft: vars.space.md,
+  paddingRight: vars.space.md,
+  boxSizing: "border-box",
+  background: vars.color.surface,
+});
+
+export const filterInput = style({
+  width: "100%",
+  fontFamily: "inherit",
+  fontSize: vars.font.sizeSm,
+  color: vars.color.text,
+  background: vars.color.surfaceRaised,
+  borderWidth: vars.border.width,
+  borderStyle: vars.border.style,
+  borderColor: vars.color.border,
+  borderRadius: vars.radius.sm,
+  paddingTop: vars.space.xs,
+  paddingBottom: vars.space.xs,
+  paddingLeft: vars.space.sm,
+  paddingRight: vars.space.sm,
+  outline: "none",
+  selectors: {
+    "&:focus-visible": {
+      boxShadow: vars.shadow.focus,
+    },
+  },
+});
+
+// --- Server-side loading overlay ---
+
+export const gridWrapper = style({
+  position: "relative",
+});
+
+export const loadingOverlay = style({
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 3,
+  background: vars.color.surface,
+  opacity: 0.85,
+  boxShadow: vars.shadow.focus,
+});
+
+// --- Pagination footer ---
+
+export const paginationFooter = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  paddingTop: vars.space.sm,
+  paddingBottom: vars.space.sm,
+  paddingLeft: vars.space.md,
+  paddingRight: vars.space.md,
+  borderTopWidth: vars.border.width,
+  borderTopStyle: vars.border.style,
+  borderTopColor: vars.color.border,
 });
 
 export const editInput = style({
@@ -231,7 +311,7 @@ export const editInput = style({
   outline: "none",
   selectors: {
     "&:focus-visible": {
-      boxShadow: vars.shadow.focus
-    }
-  }
+      boxShadow: vars.shadow.focus,
+    },
+  },
 });
