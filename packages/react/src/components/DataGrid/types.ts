@@ -11,6 +11,10 @@ export interface DataGridColumn<T> {
   pinned?: "left" | "right";
   /** Allow this column's cells to be edited when the row is in edit mode. */
   editable?: boolean;
+  /** Allow this column to be filtered via the filter row. */
+  filterable?: boolean;
+  /** Filter input type when filterable is true. Defaults to 'text'. */
+  filterType?: "text" | "select";
   accessor?: (row: T) => string | number;
   render?: (row: T) => ReactNode;
 }
@@ -20,4 +24,9 @@ export type SortDirection = "asc" | "desc" | null;
 export interface SortState {
   key: string;
   direction: SortDirection;
+}
+
+export interface FilterState {
+  key: string;
+  value: string;
 }
