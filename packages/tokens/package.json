@@ -1,10 +1,10 @@
 {
   "name": "@vesture/tokens",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Themeable design token contract and reference theme for Vesture component libraries.",
   "type": "module",
   "license": "MIT",
-  "author": "Vesture Contributors",
+  "author": "Sagar Bhat",
   "keywords": [
     "design-tokens",
     "theme",

@@ -1,10 +1,10 @@
 {
   "name": "@vesture/theme-retro",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A warm, terracotta-and-serif retro theme implementing the @vesture/tokens contract.",
   "type": "module",
   "license": "MIT",
-  "author": "Vesture Contributors",
+  "author": "Sagar Bhat",
   "keywords": [
     "theme",
     "vesture",

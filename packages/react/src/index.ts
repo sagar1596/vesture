@@ -156,4 +156,45 @@ export type {
   UseCommandPaletteShortcutOptions,
 } from "./components/CommandPalette";
 
+export { LineChart, InteractiveLineChart } from "./components/charts/LineChart";
+export type {
+  LineChartBaseProps,
+  LineChartDataPoint,
+  LineChartMargin,
+  LineChartProps,
+  LineChartSeries,
+  LineChartXScaleType,
+  InteractiveLineChartProps
+} from "./components/charts/LineChart";
+
+export { BarChart, InteractiveBarChart } from "./components/charts/BarChart";
+export type {
+  BarChartBaseProps,
+  BarChartDataPoint,
+  BarChartLayout,
+  BarChartMargin,
+  BarChartProps,
+  BarChartSeries,
+  InteractiveBarChartProps
+} from "./components/charts/BarChart";
+
+export { AreaChart, InteractiveAreaChart } from "./components/charts/AreaChart";
+export type {
+  AreaChartBaseProps,
+  AreaChartDataPoint,
+  AreaChartMargin,
+  AreaChartProps,
+  AreaChartSeries,
+  AreaChartXScaleType,
+  InteractiveAreaChartProps
+} from "./components/charts/AreaChart";
+
+export { PieChart, InteractivePieChart } from "./components/charts/PieChart";
+export type {
+  PieChartBaseProps,
+  PieChartDataPoint,
+  PieChartProps,
+  InteractivePieChartProps
+} from "./components/charts/PieChart";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
