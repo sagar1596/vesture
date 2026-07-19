@@ -2,13 +2,17 @@ import { useEffect } from "react";
 import type { ReactNode } from "react";
 import type { Decorator, Preview } from "@storybook/react-vite";
 import "@vesture/tokens/styles.css";
-import "@vesture/theme-retro/styles.css";
 import { defaultThemeClass, vars } from "@vesture/tokens";
-import { retroThemeClass } from "@vesture/theme-retro";
 
+// @vesture/react's Storybook only wires up the default theme. Theme packages
+// (e.g. @vesture/theme-retro) depend on @vesture/react via
+// "@vesture/react/theme-hooks" to target component classes directly, so
+// @vesture/react can no longer depend back on a theme package (even as a
+// devDependency) without creating a cycle in the workspace build graph. Verify
+// non-default themes against real components via `apps/playground`
+// (depends on both and already has a theme switcher) instead.
 const THEMES = {
-  default: defaultThemeClass,
-  retro: retroThemeClass
+  default: defaultThemeClass
 } as const;
 
 type ThemeName = keyof typeof THEMES;
@@ -55,10 +59,7 @@ const preview: Preview = {
       toolbar: {
         title: "Theme",
         icon: "paintbrush",
-        items: [
-          { value: "default", title: "Default" },
-          { value: "retro", title: "Retro" }
-        ],
+        items: [{ value: "default", title: "Default" }],
         dynamicTitle: true
       }
     }

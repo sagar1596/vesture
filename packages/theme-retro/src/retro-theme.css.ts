@@ -30,23 +30,39 @@ export const retroThemeClass = createTheme(vars, {
     xl: "32px",
     "2xl": "48px"
   },
+  // Sharper than the default theme's sm:4/md:8/lg:12, not softer. Heavy
+  // rounding reads as "modern SaaS" (think current-day mobile app icons);
+  // vintage/poster/diner-sign design references (postcards, matchbooks,
+  // enamel signage) skew toward crisp or only lightly eased corners. Paired
+  // with the hard offset shadows below, sharp corners sell the "printed
+  // card/sticker" read — a soft-rounded card with a hard drop shadow looks
+  // like a bug, not an aesthetic.
   radius: {
     none: "0px",
-    sm: "6px",
-    md: "12px",
-    lg: "20px",
+    sm: "2px",
+    md: "4px",
+    lg: "8px",
     full: "9999px"
   },
+  // Hard, solid-edged "poster/sticker" offset shadows (no blur, high
+  // opacity) instead of the soft blurred rgba shadows other themes use —
+  // offset scales sm→lg the same relative way the old blur radii did.
+  // `focus` stays a soft blurred ring on purpose: its job is accessibility
+  // signaling, not aesthetic consistency with the other shadows.
   shadow: {
     none: "none",
-    sm: "0 1px 2px rgba(59, 42, 26, 0.12)",
-    md: "0 4px 10px rgba(59, 42, 26, 0.16)",
-    lg: "0 14px 28px rgba(59, 42, 26, 0.22)",
+    sm: "2px 2px 0 0 rgba(59, 42, 26, 0.85)",
+    md: "4px 4px 0 0 rgba(59, 42, 26, 0.85)",
+    lg: "8px 8px 0 0 rgba(59, 42, 26, 0.85)",
     focus: "0 0 0 3px rgba(193, 80, 46, 0.35)"
   },
   border: {
     width: "2px",
-    widthStrong: "3px",
+    // 3px read as thin rather than "chunky" next to the new hard-offset
+    // shadows once checked against Toast/Alert's left accent border and
+    // Avatar's ring (the actual widthStrong consumers) — 4px reads as a
+    // deliberate bold accent instead of an incremental bump.
+    widthStrong: "4px",
     style: "solid"
   },
   font: {

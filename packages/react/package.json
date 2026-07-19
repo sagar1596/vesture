@@ -1,6 +1,6 @@
 {
   "name": "@vesture/react",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "React component library for Vesture, themed via @vesture/tokens.",
   "type": "module",
   "license": "MIT",
@@ -35,6 +35,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./theme-hooks": {
+      "types": "./dist/theme-hooks.d.ts",
+      "default": "./dist/theme-hooks.js"
     },
     "./styles.css": "./dist/index.css",
     "./package.json": "./package.json"
@@ -76,7 +80,6 @@
     "@types/react-dom": "^18.3.1",
     "@vanilla-extract/esbuild-plugin": "^2.3.9",
     "@vanilla-extract/vite-plugin": "^4.0.19",
-    "@vesture/theme-retro": "^0.1.1",
     "jsdom": "^25.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
