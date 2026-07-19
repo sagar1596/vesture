@@ -149,4 +149,11 @@ export type {
   TreeViewSelectable,
 } from "./components/TreeView";
 
+export { CommandPalette, useCommandPaletteShortcut } from "./components/CommandPalette";
+export type {
+  CommandItem,
+  CommandPaletteProps,
+  UseCommandPaletteShortcutOptions,
+} from "./components/CommandPalette";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
