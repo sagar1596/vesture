@@ -19,9 +19,15 @@ import {
   inputEl,
   listbox,
   option as optionClass,
+  virtualSpacer,
   wrapper
 } from "./Combobox.css";
 import type { ComboboxOption, ComboboxProps } from "./types";
+
+// Matches the .option class's padding (2 * space.sm = 16px) + line height
+// (sizeSm 14px * lineHeightNormal 1.5 = 21px) in Combobox.css.ts.
+const DEFAULT_OPTION_HEIGHT = 37;
+const OVERSCAN = 5;
 
 function defaultFilter(options: ComboboxOption[], inputText: string): ComboboxOption[] {
   const query = inputText.trim().toLowerCase();
@@ -47,6 +53,8 @@ export function Combobox({
   disabled = false,
   invalid,
   loading = false,
+  virtualizationThreshold = 50,
+  optionHeight = DEFAULT_OPTION_HEIGHT,
   id,
   className,
   ...rest
@@ -80,9 +88,51 @@ export function Combobox({
   }, [singleValue, multiple]);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const listboxRef = useRef<HTMLDivElement | null>(null);
   const listboxId = useId();
 
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(280);
+
   const filteredOptions = filterOptions(options, multiple ? inputText : open ? inputText : "");
+
+  const isVirtualized = filteredOptions.length >= virtualizationThreshold;
+
+  useEffect(() => {
+    // A brand-new `options` array (e.g. an async re-fetch triggered by
+    // onInputChange) means the previous scroll position/active row are
+    // stale — land back at the top rather than mid-scroll.
+    setScrollTop(0);
+    setActiveIndex(null);
+    if (listboxRef.current) listboxRef.current.scrollTop = 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options]);
+
+  useEffect(() => {
+    if (!open) return;
+    const node = listboxRef.current;
+    if (!node) return;
+    if (node.clientHeight > 0) setViewportHeight(node.clientHeight);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setViewportHeight(entry.contentRect.height);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [open]);
+
+  const totalHeight = filteredOptions.length * optionHeight;
+  const maxScrollTop = Math.max(0, totalHeight - viewportHeight);
+  const effectiveScrollTop = Math.min(scrollTop, maxScrollTop);
+  const visibleCount = Math.ceil(viewportHeight / optionHeight) + OVERSCAN * 2;
+  const startIndex = isVirtualized
+    ? Math.max(0, Math.floor(effectiveScrollTop / optionHeight) - OVERSCAN)
+    : 0;
+  const endIndex = isVirtualized
+    ? Math.min(filteredOptions.length, startIndex + visibleCount)
+    : filteredOptions.length;
+  const visibleOptions = filteredOptions.slice(startIndex, endIndex);
 
   const { refs, floatingStyles, context } = useFloating({
     open,
@@ -139,6 +189,22 @@ export function Combobox({
     setActiveIndex(null);
   };
 
+  const scrollIndexIntoView = (index: number) => {
+    if (!isVirtualized) return;
+    const rowTop = index * optionHeight;
+    const rowBottom = rowTop + optionHeight;
+    let next = scrollTop;
+    if (rowTop < scrollTop) {
+      next = rowTop;
+    } else if (rowBottom > scrollTop + viewportHeight) {
+      next = rowBottom - viewportHeight;
+    } else {
+      return;
+    }
+    setScrollTop(next);
+    if (listboxRef.current) listboxRef.current.scrollTop = next;
+  };
+
   const moveActiveIndex = (direction: 1 | -1) => {
     if (filteredOptions.length === 0) return;
     let next = activeIndex ?? (direction === 1 ? -1 : filteredOptions.length);
@@ -146,6 +212,7 @@ export function Combobox({
       next = (next + direction + filteredOptions.length) % filteredOptions.length;
       if (!filteredOptions[next]?.disabled) {
         setActiveIndex(next);
+        scrollIndexIntoView(next);
         return;
       }
     }
@@ -246,18 +313,50 @@ export function Combobox({
       {open ? (
         <FloatingPortal>
           <div
-            ref={refs.setFloating}
+            ref={(node) => {
+              refs.setFloating(node);
+              listboxRef.current = node;
+            }}
             id={listboxId}
             role="listbox"
             aria-multiselectable={multiple || undefined}
             className={listbox}
             style={floatingStyles}
+            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
             {...getFloatingProps()}
           >
             {loading ? (
               <div className={emptyState}>Loading…</div>
             ) : filteredOptions.length === 0 ? (
               <div className={emptyState}>{noOptionsMessage}</div>
+            ) : isVirtualized ? (
+              <div className={virtualSpacer} style={{ height: totalHeight }}>
+                {visibleOptions.map((opt, i) => {
+                  const index = startIndex + i;
+                  const isSelected = multiple
+                    ? selectedValues.includes(opt.value)
+                    : opt.value === singleValue;
+                  return (
+                    <div
+                      key={opt.value}
+                      id={`${listboxId}-option-${index}`}
+                      role="option"
+                      aria-selected={isSelected}
+                      aria-disabled={opt.disabled || undefined}
+                      data-active={activeIndex === index || undefined}
+                      className={optionClass}
+                      style={{ position: "absolute", top: index * optionHeight, left: 0, right: 0, height: optionHeight }}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        selectOption(opt);
+                      }}
+                      onMouseEnter={() => setActiveIndex(index)}
+                    >
+                      {opt.label}
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               filteredOptions.map((opt, index) => {
                 const isSelected = multiple ? selectedValues.includes(opt.value) : opt.value === singleValue;

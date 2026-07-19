@@ -113,10 +113,12 @@ export const listbox = style({
 export const option = style({
   display: "block",
   width: "100%",
+  boxSizing: "border-box",
   textAlign: "left",
   color: vars.color.text,
   fontFamily: vars.font.body,
   fontSize: vars.font.sizeSm,
+  lineHeight: vars.font.lineHeightNormal,
   borderRadius: vars.radius.sm,
   paddingTop: vars.space.sm,
   paddingBottom: vars.space.sm,
@@ -136,6 +138,11 @@ export const option = style({
       cursor: "not-allowed"
     }
   }
+});
+
+export const virtualSpacer = style({
+  position: "relative",
+  width: "100%"
 });
 
 export const emptyState = style({

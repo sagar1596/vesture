@@ -20,6 +20,10 @@ export interface ComboboxProps {
   disabled?: boolean;
   invalid?: boolean;
   loading?: boolean;
+  /** Number of filtered options at/above which the listbox switches to virtualized (windowed) rendering. */
+  virtualizationThreshold?: number;
+  /** Row height (px) used for virtualized listbox rows; defaults to the `.option` class's rendered height. */
+  optionHeight?: number;
   id?: string;
   className?: string;
   "aria-label"?: string;

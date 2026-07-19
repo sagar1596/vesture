@@ -89,6 +89,29 @@ export const AsyncFiltering: Story = {
   }
 };
 
+const manyOptions: ComboboxOption[] = Array.from({ length: 5000 }, (_, i) => ({
+  value: `option-${i}`,
+  label: `Option ${i}`
+}));
+
+// Above the default virtualizationThreshold (50), so the listbox windows its
+// rendering — open devtools and inspect the listbox: only a small bounded
+// number of [role="option"] elements exist in the DOM at once, not 5000.
+export const LargeOptionList: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | null>(null);
+    return (
+      <Combobox
+        aria-label="Large option list"
+        options={manyOptions}
+        value={value}
+        onChange={(next) => setValue(next as string | null)}
+        placeholder="Search 5000 options…"
+      />
+    );
+  }
+};
+
 export const Disabled: Story = {
   render: () => <Combobox aria-label="Fruit" options={fruitOptions} defaultValue="apple" disabled />
 };
