@@ -69,6 +69,28 @@ export const defaultThemeClass = createTheme(vars, {
     durationFast: "100ms",
     durationNormal: "200ms",
     easing: "cubic-bezier(0.4, 0, 0.2, 1)"
+  },
+  chart: {
+    // 8-slot categorical palette, colorblind-validated (Machado-2009 CVD
+    // simulation, worst adjacent ΔE 24.2) via the dataviz skill's
+    // validate_palette.js. Distinct hex from success/warning/danger above so
+    // a chart series is never mistaken for a status indicator.
+    series1: "#2a78d6",
+    series2: "#1baf7a",
+    series3: "#eda100",
+    series4: "#008300",
+    series5: "#4a3aa7",
+    series6: "#e34948",
+    series7: "#e87ba4",
+    series8: "#eb6834",
+    grid: "#e4e4e7",
+    axis: "#a1a1aa",
+    // Echoes Popover's floating-surface treatment (surfaceRaised + text + border).
+    tooltipBackground: "#ffffff",
+    tooltipText: "#18181b",
+    tooltipBorder: "#e4e4e7",
+    // Same value as color.textMuted — a muted placeholder, not an unrelated gray.
+    emptyState: "#6b7280"
   }
 });
 

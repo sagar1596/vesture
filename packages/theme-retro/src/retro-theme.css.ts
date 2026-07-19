@@ -68,6 +68,28 @@ export const retroThemeClass = createTheme(vars, {
     durationFast: "120ms",
     durationNormal: "220ms",
     easing: "cubic-bezier(0.34, 1.56, 0.64, 1)"
+  },
+  chart: {
+    // Warm/vintage 8-slot categorical palette, colorblind-validated the same
+    // way as the default theme's (worst adjacent ΔE 18.4 against this
+    // theme's #faf3e8 surface). Distinct from primary/success/warning/danger
+    // above so a series never reads as a status indicator.
+    series1: "#1f6fa8",
+    series2: "#1f8a6f",
+    series3: "#d1a125",
+    series4: "#7a8f2e",
+    series5: "#8a4a82",
+    series6: "#c0567a",
+    series7: "#cf7a2e",
+    series8: "#4f4f96",
+    grid: "#e2d3ba",
+    axis: "#b5a487",
+    // Echoes Popover's floating-surface treatment (surfaceRaised + text + border).
+    tooltipBackground: "#fffdf8",
+    tooltipText: "#3b2a1a",
+    tooltipBorder: "#e2d3ba",
+    // Same value as color.textMuted — a muted placeholder, not an unrelated gray.
+    emptyState: "#8a7561"
   }
 });
 

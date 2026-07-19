@@ -65,5 +65,28 @@ export const vars = createThemeContract({
     durationFast: null,
     durationNormal: null,
     easing: null
+  },
+  // Tokens consumed by future Chart components. series1-8 is a fixed-order
+  // categorical palette (createThemeContract has no array support, hence the
+  // numbered keys) — assign by slot index, never cycle or reassign on filter.
+  // grid/axis are chrome and should recede against the background. The
+  // tooltip* trio styles the chart's floating tooltip layer. Every theme
+  // package must implement all of these fields or createTheme() will fail
+  // to compile.
+  chart: {
+    series1: null,
+    series2: null,
+    series3: null,
+    series4: null,
+    series5: null,
+    series6: null,
+    series7: null,
+    series8: null,
+    grid: null,
+    axis: null,
+    tooltipBackground: null,
+    tooltipText: null,
+    tooltipBorder: null,
+    emptyState: null
   }
 });
