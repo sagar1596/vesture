@@ -12,55 +12,18 @@ import {
   weekdayCell,
 } from "./Calendar.css";
 import type { CalendarProps } from "./types";
-
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function endOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-}
-
-function addDays(date: Date, amount: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + amount);
-  return next;
-}
-
-function addMonths(date: Date, amount: number): Date {
-  const next = new Date(date);
-  next.setMonth(next.getMonth() + amount);
-  return next;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function isSameMonth(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
-}
-
-function clampToMidnight(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function startOfWeek(date: Date, weekStartsOn: 0 | 1): Date {
-  const diff = (date.getDay() - weekStartsOn + 7) % 7;
-  return addDays(date, -diff);
-}
-
-function endOfWeek(date: Date, weekStartsOn: 0 | 1): Date {
-  return addDays(startOfWeek(date, weekStartsOn), 6);
-}
-
-function dateKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-}
+import {
+  addDays,
+  addMonths,
+  clampToMidnight,
+  dateKey,
+  endOfMonth,
+  endOfWeek,
+  isSameDay,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+} from "../../utils/date";
 
 function getCalendarWeeks(month: Date, weekStartsOn: 0 | 1): Date[][] {
   const gridStart = startOfWeek(startOfMonth(month), weekStartsOn);

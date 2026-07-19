@@ -197,4 +197,7 @@ export type {
   InteractivePieChartProps
 } from "./components/charts/PieChart";
 
+export { Scheduler } from "./components/Scheduler";
+export type { SchedulerEvent, SchedulerProps } from "./components/Scheduler";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
