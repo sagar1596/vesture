@@ -136,11 +136,17 @@ export type { NumberInputProps } from "./components/NumberInput";
 export { Slider } from "./components/Slider";
 export type { SliderProps, SliderValue } from "./components/Slider";
 
+export { Rating } from "./components/Rating";
+export type { RatingProps } from "./components/Rating";
+
 export { Combobox } from "./components/Combobox";
 export type {
   ComboboxOption,
   ComboboxProps,
 } from "./components/Combobox";
+
+export { FileUpload } from "./components/FileUpload";
+export type { FileUploadProps, UploadFile } from "./components/FileUpload";
 
 export { TreeView } from "./components/TreeView";
 export type {

@@ -22,6 +22,7 @@ import {
   Popover,
   Progress,
   Radio,
+  Rating,
   Select,
   Slider,
   Spinner,
@@ -245,6 +246,70 @@ function NewFormControlsSection() {
             onChange={(next) => setFruits(next as string[])}
             placeholder="Add fruit…"
           />
+        </Stack>
+      </Stack>
+    </Section>
+  );
+}
+
+function RatingSection() {
+  const [basic, setBasic] = useState(0);
+  const [half, setHalf] = useState(3.5);
+  const [controlled, setControlled] = useState(2);
+
+  return (
+    <Section title="Rating">
+      <Stack gap="lg">
+        <Stack gap="sm">
+          <Label>Interactive — {basic}</Label>
+          <Rating aria-label="Rate this product" value={basic} onChange={setBasic} />
+        </Stack>
+
+        <Divider />
+
+        <Stack gap="sm">
+          <Label>allowHalf — {half}</Label>
+          <Rating aria-label="Rate with half stars" allowHalf value={half} onChange={setHalf} />
+          <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+            Click the left/right half of a star for a half or whole value. Arrow keys move by a
+            whole star; Shift+Arrow moves by half a star.
+          </p>
+        </Stack>
+
+        <Divider />
+
+        <Stack gap="sm">
+          <Label>Read-only display (4.2 / 5)</Label>
+          <Rating readOnly value={4.2} />
+        </Stack>
+
+        <Divider />
+
+        <Stack gap="sm">
+          <Label>Disabled</Label>
+          <Rating aria-label="Disabled rating" disabled defaultValue={3} />
+        </Stack>
+
+        <Divider />
+
+        <Stack gap="sm">
+          <Label>Custom max — 10 stars</Label>
+          <Rating aria-label="Rate out of 10" max={10} defaultValue={6} />
+        </Stack>
+
+        <Divider />
+
+        <Stack gap="sm">
+          <Label>Controlled — {controlled}</Label>
+          <Rating aria-label="Controlled rating" value={controlled} onChange={setControlled} />
+          <Stack direction="row" gap="sm">
+            <Button variant="secondary" onClick={() => setControlled(0)}>
+              Reset to 0
+            </Button>
+            <Button variant="secondary" onClick={() => setControlled(5)}>
+              Set to 5
+            </Button>
+          </Stack>
         </Stack>
       </Stack>
     </Section>
@@ -833,6 +898,7 @@ export function App() {
           <ButtonsSection />
           <FormControlsSection />
           <NewFormControlsSection />
+          <RatingSection />
           <SelectionControlsSection />
           <LayoutSection />
           <OverlaysSection />
