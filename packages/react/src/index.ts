@@ -200,4 +200,15 @@ export type {
 export { Scheduler } from "./components/Scheduler";
 export type { SchedulerEvent, SchedulerProps } from "./components/Scheduler";
 
+export { Skeleton, SkeletonWrapper } from "./components/Skeleton";
+export type {
+  SkeletonAnimation,
+  SkeletonProps,
+  SkeletonVariant,
+  SkeletonWrapperProps,
+} from "./components/Skeleton";
+
+export { Drawer } from "./components/Drawer";
+export type { DrawerProps, DrawerSide } from "./components/Drawer";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";

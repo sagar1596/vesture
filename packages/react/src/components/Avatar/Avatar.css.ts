@@ -39,7 +39,7 @@ export const statusDot = style({
   width: "10px",
   height: "10px",
   borderRadius: vars.radius.full,
-  borderWidth: vars.border.widthStrong,
+  borderWidth: vars.border.width,
   borderStyle: vars.border.style,
   borderColor: vars.color.surfaceRaised
 });
