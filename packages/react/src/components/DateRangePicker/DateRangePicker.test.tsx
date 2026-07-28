@@ -90,7 +90,8 @@ describe("DateRangePicker", () => {
     render(<DateRangePicker onChange={onChange} />);
     await openPopover();
 
-    const grid = within(screen.getByRole("dialog")).getByRole("grid");
+    const dialog = screen.getByRole("dialog");
+    const grid = within(dialog).getByRole("grid");
     const today = new Date();
     fireEvent.click(
       within(grid).getByRole("button", { name: today.toDateString() })
@@ -109,6 +110,18 @@ describe("DateRangePicker", () => {
       today.getMonth(),
       today.getDate() + 5
     );
+    // A trailing overflow day from next month may already be visible in the
+    // currently displayed month's grid, but clicking it just navigates the
+    // calendar (Calendar.tsx's handleDayClick treats !inMonth clicks as
+    // navigation, not selection) — so explicitly page forward whenever the
+    // target date isn't in the visible month, rather than relying on the
+    // overflow row to be clickable-as-selection.
+    if (
+      later.getMonth() !== today.getMonth() ||
+      later.getFullYear() !== today.getFullYear()
+    ) {
+      fireEvent.click(within(dialog).getByRole("button", { name: "Next month" }));
+    }
     fireEvent.click(
       within(grid).getByRole("button", { name: later.toDateString() })
     );
@@ -133,12 +146,24 @@ describe("DateRangePicker", () => {
     );
     await openPopover();
 
-    const grid = within(screen.getByRole("dialog")).getByRole("grid");
+    const dialog = screen.getByRole("dialog");
+    const grid = within(dialog).getByRole("grid");
     const earlier = new Date(
       today.getFullYear(),
       today.getMonth(),
       today.getDate() - 3
     );
+    // See the analogous guard in the "selecting two dates" test above: a
+    // leading overflow day from the previous month is navigation-only, not
+    // selectable, so page backward first when the target isn't in view.
+    if (
+      earlier.getMonth() !== today.getMonth() ||
+      earlier.getFullYear() !== today.getFullYear()
+    ) {
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Previous month" })
+      );
+    }
     fireEvent.click(
       within(grid).getByRole("button", { name: earlier.toDateString() })
     );

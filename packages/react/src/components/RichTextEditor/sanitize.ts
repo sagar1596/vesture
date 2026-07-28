@@ -73,15 +73,26 @@ function filterStyleAttribute(value: string): string {
     .join("; ");
 }
 
-DOMPurify.addHook("uponSanitizeAttribute", (_node, data) => {
-  if (data.attrName !== "style") return;
-  const filtered = filterStyleAttribute(data.attrValue);
-  if (filtered) {
-    data.attrValue = filtered;
-  } else {
-    data.keepAttr = false;
-  }
-});
+// DOMPurify's default export is browser-only (it needs a real `window`
+// internally) and this hook registration is a module-level side effect that
+// runs the instant this file is imported — in a Next.js (or any SSR)
+// environment, the module graph for a page that transitively imports
+// RichTextEditor gets evaluated on the server during prerendering, where
+// there's no `window` at all, and `DOMPurify.addHook` doesn't exist yet.
+// sanitizeHtml() itself is only ever called from effects/event handlers
+// (never during the synchronous render/SSR pass), so it's safe to just skip
+// registering this hook server-side — there's nothing to guard yet.
+if (typeof window !== "undefined") {
+  DOMPurify.addHook("uponSanitizeAttribute", (_node, data) => {
+    if (data.attrName !== "style") return;
+    const filtered = filterStyleAttribute(data.attrValue);
+    if (filtered) {
+      data.attrValue = filtered;
+    } else {
+      data.keepAttr = false;
+    }
+  });
+}
 
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
