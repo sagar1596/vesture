@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import {
   Accordion,
@@ -21,9 +21,13 @@ import {
   Pagination,
   Popover,
   Progress,
+  QueryBuilder,
+  queryToString,
   Radio,
   Rating,
+  RichTextEditor,
   Select,
+  SignaturePad,
   Slider,
   Spinner,
   Stack,
@@ -39,6 +43,9 @@ import {
 import type {
   ComboboxOption,
   DataGridColumn,
+  QueryField,
+  QueryGroup,
+  SignaturePadHandle,
   SliderValue,
   TreeNode,
 } from "@vesture/react";
@@ -311,6 +318,94 @@ function RatingSection() {
             </Button>
           </Stack>
         </Stack>
+      </Stack>
+    </Section>
+  );
+}
+
+function SignaturePadSection() {
+  const padRef = useRef<SignaturePadHandle>(null);
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  return (
+    <Section title="SignaturePad">
+      <Stack gap="md">
+        <SignaturePad ref={padRef} onChange={setDataUrl} />
+        <Stack direction="row" gap="sm" align="center">
+          <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+            {dataUrl ? "Signed." : "Nothing drawn yet."}
+          </p>
+        </Stack>
+      </Stack>
+    </Section>
+  );
+}
+
+const QUERY_BUILDER_FIELDS: QueryField[] = [
+  { key: "name", label: "Name", type: "text" },
+  { key: "age", label: "Age", type: "number" },
+  { key: "signupDate", label: "Signup date", type: "date" },
+  {
+    key: "department",
+    label: "Department",
+    type: "select",
+    options: [
+      { value: "engineering", label: "Engineering" },
+      { value: "design", label: "Design" },
+      { value: "sales", label: "Sales" },
+    ],
+  },
+];
+
+function QueryBuilderSection() {
+  const [query, setQuery] = useState<QueryGroup>({
+    id: "root",
+    combinator: "and",
+    rules: [
+      { id: "r1", field: "name", operator: "contains", value: "Ada" },
+      {
+        id: "g1",
+        combinator: "or",
+        rules: [
+          { id: "r2", field: "department", operator: "equals", value: "engineering" },
+          { id: "r3", field: "age", operator: "gt", value: 30 },
+        ],
+      },
+    ],
+  });
+
+  return (
+    <Section title="QueryBuilder">
+      <Stack gap="sm">
+        <QueryBuilder fields={QUERY_BUILDER_FIELDS} value={query} onChange={setQuery} maxDepth={3} />
+        <p style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+          {queryToString(query) || "(no rules)"}
+        </p>
+      </Stack>
+    </Section>
+  );
+}
+
+function RichTextEditorSection() {
+  const [html, setHtml] = useState(
+    "<h1>Getting started</h1><p>This editor supports <b>bold</b>, <i>italic</i>, and <a href=\"https://example.com\">links</a>.</p>"
+  );
+
+  return (
+    <Section title="RichTextEditor">
+      <Stack gap="sm">
+        <RichTextEditor value={html} onChange={setHtml} style={{ width: "100%" }} />
+        <Label>Sanitized HTML output</Label>
+        <pre
+          style={{
+            fontSize: vars.font.sizeXs,
+            color: vars.color.textMuted,
+            whiteSpace: "pre-wrap",
+            margin: 0,
+          }}
+        >
+          {html}
+        </pre>
       </Stack>
     </Section>
   );
@@ -899,6 +994,9 @@ export function App() {
           <FormControlsSection />
           <NewFormControlsSection />
           <RatingSection />
+          <SignaturePadSection />
+          <QueryBuilderSection />
+          <RichTextEditorSection />
           <SelectionControlsSection />
           <LayoutSection />
           <OverlaysSection />

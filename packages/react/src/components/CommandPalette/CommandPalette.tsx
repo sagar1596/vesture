@@ -9,6 +9,7 @@ import {
   useInteractions,
   useRole
 } from "@floating-ui/react";
+import { defaultFilterItems, useFilterableList } from "../../utils/useFilterableList";
 import {
   emptyState,
   groupHeader,
@@ -28,17 +29,9 @@ import type { CommandItem, CommandPaletteProps } from "./types";
 const DEFAULT_ROW_HEIGHT = 40;
 const OVERSCAN = 5;
 
-function defaultFilterCommands(commands: CommandItem[], query: string): CommandItem[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return commands;
-  return commands.filter((command) => {
-    const haystack = [command.label, command.group, ...(command.keywords ?? [])]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(q);
-  });
-}
+// CommandItem already has the { id, label, group?, keywords?, disabled? }
+// shape useFilterableList's default filter expects — no adapting needed.
+const defaultFilterCommands = defaultFilterItems<CommandItem>;
 
 interface HeaderRow {
   type: "header";
@@ -86,7 +79,6 @@ export function CommandPalette({
   "aria-label": ariaLabel
 }: CommandPaletteProps): ReactElement | null {
   const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(320);
 
@@ -97,7 +89,17 @@ export function CommandPalette({
   const { refs, context } = useFloating({ open, onOpenChange });
   const { getFloatingProps } = useInteractions([useDismiss(context), useRole(context, { role: "dialog" })]);
 
-  const filteredCommands = useMemo(() => filterCommands(commands, query), [commands, filterCommands, query]);
+  // scrollRowIntoView (defined below, after itemRowIndices exists) needs to
+  // react to activeIndex changes the hook drives internally — routed through
+  // a ref so the callback passed into the hook can stay referentially stable
+  // while still always calling the current render's version.
+  const scrollCallbackRef = useRef<(index: number) => void>(() => {});
+  const { filteredItems: filteredCommands, activeIndex, setActiveIndex, moveActiveIndex } = useFilterableList(
+    commands,
+    query,
+    filterCommands,
+    (index) => scrollCallbackRef.current(index)
+  );
   const { rows, itemRowIndices } = useMemo(() => buildRows(filteredCommands), [filteredCommands]);
 
   const isVirtualized = rows.length >= virtualizationThreshold;
@@ -160,18 +162,9 @@ export function CommandPalette({
     if (listRef.current) listRef.current.scrollTop = next;
   };
 
-  const moveActiveIndex = (direction: 1 | -1) => {
-    if (filteredCommands.length === 0) return;
-    let next = activeIndex ?? (direction === 1 ? -1 : filteredCommands.length);
-    for (let step = 0; step < filteredCommands.length; step++) {
-      next = (next + direction + filteredCommands.length) % filteredCommands.length;
-      if (!filteredCommands[next]?.disabled) {
-        setActiveIndex(next);
-        const rowIndex = itemRowIndices[next];
-        if (rowIndex !== undefined) scrollRowIntoView(rowIndex);
-        return;
-      }
-    }
+  scrollCallbackRef.current = (index: number) => {
+    const rowIndex = itemRowIndices[index];
+    if (rowIndex !== undefined) scrollRowIntoView(rowIndex);
   };
 
   const selectCommand = (command: CommandItem) => {
