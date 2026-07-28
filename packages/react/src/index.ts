@@ -217,4 +217,21 @@ export type {
 export { Drawer } from "./components/Drawer";
 export type { DrawerProps, DrawerSide } from "./components/Drawer";
 
+export { SignaturePad } from "./components/SignaturePad";
+export type { SignaturePadHandle, SignaturePadProps } from "./components/SignaturePad";
+
+export { QueryBuilder, queryToString, isQueryGroup } from "./components/QueryBuilder";
+export type {
+  QueryBuilderProps,
+  QueryField,
+  QueryFieldOption,
+  QueryFieldType,
+  QueryGroup,
+  QueryOperator,
+  QueryRule
+} from "./components/QueryBuilder";
+
+export { RichTextEditor, DEFAULT_TOOLBAR } from "./components/RichTextEditor";
+export type { RichTextEditorProps, ToolbarCommand } from "./components/RichTextEditor";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
