@@ -241,4 +241,15 @@ export type {
   KanbanColumn,
 } from "./components/KanbanBoard";
 
+export { Diagram, InteractiveDiagram } from "./components/Diagram";
+export type {
+  DiagramBaseProps,
+  DiagramEdge,
+  DiagramEdgeStyle,
+  DiagramNode,
+  DiagramNodeShape,
+  DiagramProps,
+  InteractiveDiagramProps
+} from "./components/Diagram";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";

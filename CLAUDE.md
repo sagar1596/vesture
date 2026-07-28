@@ -73,6 +73,11 @@ analog here rather than inventing a new shape.
 
 **Multi-column / card-collection layouts**: `KanbanBoard` (columns of cards; add/remove and now full pointer + keyboard drag-and-drop via `onColumnsChange` — see "Recent context" below). Read this alongside `DataGrid`'s column layout and `TreeView`'s windowing before building another data-collection component — `KanbanBoard` deliberately skipped virtualization (checked again in phase 2, same conclusion) since plain rendering held up fine through 60 cards in one column; revisit only if a future column count is an order of magnitude larger.
 
+**Graph / node-edge layouts**: `Diagram` (direct coordinate positioning, not data-domain
+mapping like `charts/` — static SVG rendering plus an `InteractiveDiagram` with pan/zoom, no
+node dragging yet; see "Recent context" below for phase 2 scope). Skipped windowing at this
+node count for the same reason `KanbanBoard` did — see "Recent context" for the measured finding.
+
 ### Theming
 
 Portal-rendered components (`Modal`, `Tooltip`, `Popover`, `DropdownMenu`,
@@ -101,6 +106,77 @@ that point outside the site's project root.
 
 ## Recent context
 
+- **2026-07-28**: Added `Diagram` phase 2 — node dragging (reposition), connection drawing
+  (pointer handles + keyboard), and node/edge deletion, on top of phase 1's pan/zoom/select-only
+  `InteractiveDiagram`. All gated behind a new `editable` prop (default `false`, so existing
+  consumers see zero behavior change) — reuses Scheduler/KanbanBoard's exact Pointer Events
+  technique (`setPointerCapture` in try/catch, a `moved` flag distinguishing a drag from a plain
+  click via `suppressClickRef`, `aria-live` announcements) rather than introducing a fourth drag
+  mechanism. Node drag recomputes the full layout (`buildDiagramLayout`, including every
+  connected edge's anchor points) on each pointermove rather than a partial/connected-edges-only
+  update — phase 1's LargeGraph finding (36 nodes/~60 edges, no perf issue) meant this simpler
+  approach didn't need the more complex targeted update the task description flagged as a
+  fallback; revisit only if a future graph is an order of magnitude larger.
+  Connection drawing: hover/selection reveals four cardinal handles
+  (`getCardinalHandlePoints` in `Diagram.render.ts` — shape-agnostic, since a rectangle's
+  bounding-box midpoints, an ellipse's axis endpoints, and a diamond's own vertices are all
+  exactly the same four coordinates), drag from a handle to a target node hit-tested via
+  `findNodeAtPoint`/`isPointInNode`, connects `source`→target-node-id (not to a specific handle,
+  reusing phase 1's anchor-point calculation to pick the visual side automatically). Keyboard
+  equivalent: `C` enters connect mode, `Tab`/`Shift+Tab` cycles the prospective target,
+  `Enter`/`Escape` confirms/cancels — chose `C` after checking it doesn't collide with
+  Delete/Backspace/arrow-key bindings already in this component.
+  Deletion: `onNodeDelete?: (nodeId, orphanedEdgeIds: string[])` — Diagram only reports deletion
+  intent (via `findConnectedEdgeIds`), since it doesn't own combined nodes+edges state; the
+  consumer must remove both the node and the orphaned edges together in one update (documented on
+  the prop itself, demonstrated in the `DeleteNodeAndOrphanedEdges` story).
+  Two real bugs found only by driving this in a real browser (both invisible to unit tests, which
+  use jsdom and don't reproduce real focus/paint behavior):
+  1. Clicking a focusable SVG element (`<g tabIndex={0}>`) does **not** move DOM focus there the
+     way clicking a focusable HTML element does — so Delete/arrow-key/`C` shortcuts silently
+     never fired after a mouse click, only after an explicit Tab into the element. Fixed by
+     calling `event.currentTarget.focus()` explicitly in the node's and edge's pointerdown/click
+     handlers (same category of gotcha as the `Slider` focus bug logged below, different root
+     cause: an SVG-specific browser behavior rather than a blocked default action).
+  2. A dragged node moved correctly but became invisible when a screenshot was taken right after
+     — turned out to be a false alarm from testing methodology (the target position was simply
+     below the story's visible canvas height, clipped by the SVG's default viewport clipping),
+     not a rendering bug; worth remembering when eyeballing drag results in a small story canvas.
+- **2026-07-28**: Added `Diagram` phase 1 — static node/edge rendering
+  (`Diagram.tsx`) plus an `InteractiveDiagram` (`Diagram.interactive.tsx`)
+  with pan (drag on empty canvas, not on a node) and wheel/pinch zoom, no
+  editing yet (node dragging, drawing new connections — phase 2). Follows
+  `LineChart`'s static/interactive split: pure geometry in `Diagram.render.ts`
+  (`getAnchorPoint` computes which side of a node's boundary an edge connects
+  to, based on shape and the direction to the other node's center — rectangle
+  uses a min-scale line/box intersection, circle treats width/height as an
+  ellipse, diamond uses the `|dx|/hw + |dy|/hh = 1` boundary condition; curved
+  edges get a quadratic-bezier control-point offset that fans out by each
+  edge's index within its unordered node-pair group, so multiple edges
+  between the same two nodes visually separate rather than overlap).
+  `InteractiveDiagram` re-derives its own layout via `buildDiagramLayout`
+  rather than wrapping the static `Diagram` component with a CSS transform —
+  wrapping was tried first but doesn't work cleanly because the static
+  component's own `viewBox` already applies a browser-managed scale/offset
+  independent of any pan/zoom transform layered on top, so hit-testing and
+  the pan/zoom math would need to invert two coordinate systems at once.
+  Direct re-render duplicates the small `NodeShape`/`EdgeLine` renderers
+  between the two files, which is consistent with this repo's
+  no-shared-hooks convention. One real bug caught only by driving it in a
+  browser (not by unit tests, which use jsdom's stubbed layout): the pan
+  background `<rect>` had no explicit `fill`, so it rendered solid black —
+  SVG shapes default to a black fill when unspecified, unlike CSS elements'
+  transparent default; fixed via `fill: "transparent"` in `Diagram.css.ts`'s
+  `canvas` class. Also found that `box-shadow` (the `vars.shadow.focus` token
+  used for focus rings elsewhere in the library) does not reliably render on
+  SVG shape elements in real browsers despite working fine as a CSS value —
+  the selected-node ring is instead a second stroked shape (same geometry,
+  6px larger) drawn behind the node using `vars.color.focusRing` directly.
+  LargeGraph story finding (36 nodes / ~60 edges, matching `KanbanBoard`'s
+  "check scale before adding windowing" precedent): pan-drag and wheel-zoom
+  both stayed visually smooth in manual browser testing, with no windowing in
+  `Diagram.render.ts`/`Diagram.interactive.tsx` — revisit only if a future
+  graph is an order of magnitude larger, same threshold `KanbanBoard` used.
 - **2026-07-28**: Added `KanbanBoard` phase 2 — pointer drag-and-drop (card
   reorder within a column, card move across columns, column reorder) plus a
   required keyboard-accessible alternative, on top of phase 1's static
