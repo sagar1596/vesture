@@ -234,4 +234,11 @@ export type {
 export { RichTextEditor, DEFAULT_TOOLBAR } from "./components/RichTextEditor";
 export type { RichTextEditorProps, ToolbarCommand } from "./components/RichTextEditor";
 
+export { KanbanBoard } from "./components/KanbanBoard";
+export type {
+  KanbanBoardProps,
+  KanbanCard,
+  KanbanColumn,
+} from "./components/KanbanBoard";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
