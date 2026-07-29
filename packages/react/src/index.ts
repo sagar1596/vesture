@@ -264,4 +264,16 @@ export type { QRCodeProps } from "./components/QRCode";
 export { Barcode } from "./components/Barcode";
 export type { BarcodeProps } from "./components/Barcode";
 
+export { Splitter } from "./components/Splitter";
+export type { SplitterProps } from "./components/Splitter";
+
+export { OTPInput } from "./components/OTPInput";
+export type { OTPInputProps } from "./components/OTPInput";
+
+export { Carousel } from "./components/Carousel";
+export type { CarouselProps } from "./components/Carousel";
+
+export { Timeline } from "./components/Timeline";
+export type { TimelineItem, TimelineProps } from "./components/Timeline";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
