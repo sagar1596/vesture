@@ -252,4 +252,16 @@ export type {
   InteractiveDiagramProps
 } from "./components/Diagram";
 
+export { Stepper } from "./components/Stepper";
+export type { StepItem, StepperOrientation, StepperProps } from "./components/Stepper";
+
+export { EmptyState } from "./components/EmptyState";
+export type { EmptyStateProps } from "./components/EmptyState";
+
+export { QRCode } from "./components/QRCode";
+export type { QRCodeProps } from "./components/QRCode";
+
+export { Barcode } from "./components/Barcode";
+export type { BarcodeProps } from "./components/Barcode";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
