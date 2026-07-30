@@ -59,6 +59,9 @@ export type {
   DropdownMenuProps,
 } from "./components/DropdownMenu";
 
+export { Menubar } from "./components/Menubar";
+export type { MenubarItem, MenubarProps } from "./components/Menubar";
+
 export { Breadcrumbs, BreadcrumbsItem } from "./components/Breadcrumbs";
 export type {
   BreadcrumbsItemProps,
@@ -258,11 +261,17 @@ export type { StepItem, StepperOrientation, StepperProps } from "./components/St
 export { EmptyState } from "./components/EmptyState";
 export type { EmptyStateProps } from "./components/EmptyState";
 
+export { ColorPicker } from "./components/ColorPicker";
+export type { ColorPickerProps } from "./components/ColorPicker";
+
 export { QRCode } from "./components/QRCode";
 export type { QRCodeProps } from "./components/QRCode";
 
 export { Barcode } from "./components/Barcode";
 export type { BarcodeProps } from "./components/Barcode";
+
+export { MentionsInput } from "./components/MentionsInput";
+export type { MentionOption, MentionsInputProps } from "./components/MentionsInput";
 
 export { Splitter } from "./components/Splitter";
 export type { SplitterProps } from "./components/Splitter";
@@ -275,5 +284,8 @@ export type { CarouselProps } from "./components/Carousel";
 
 export { Timeline } from "./components/Timeline";
 export type { TimelineItem, TimelineProps } from "./components/Timeline";
+
+export { ImageCropper } from "./components/ImageCropper";
+export type { ImageCropperHandle, ImageCropperProps } from "./components/ImageCropper";
 
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
