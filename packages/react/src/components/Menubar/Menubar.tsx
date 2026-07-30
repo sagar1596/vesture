@@ -18,6 +18,29 @@ export function Menubar({ items }: MenubarProps): ReactElement {
   const [focusedIndex, setFocusedIndex] = useState(0);
   const triggerRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
+  // Per-index ref callbacks, cached rather than created inline in the map()
+  // below, and passed to DropdownMenu's onReferenceRef (not as a `ref` prop
+  // on the trigger element itself — cloneElement's own `ref` in its config
+  // fully replaces whatever ref the original element carried, it doesn't
+  // merge, so a ref set directly on the trigger JSX below would just be
+  // silently discarded). An inline `(node) => ...}` callback is a new
+  // function identity every render; if its identity churned, floating-ui's
+  // useMergeRefs (which combines this with its own refs.setReference) would
+  // detach and reattach the reference element on every render, defeating
+  // its position tracking — the floating menu would never get a stable
+  // anchor to compute a position from. Caching keeps identity stable.
+  const setTriggerRefCallbacks = useRef<Array<(node: Element | null) => void>>([]);
+  const getTriggerRefCallback = (index: number) => {
+    let callback = setTriggerRefCallbacks.current[index];
+    if (!callback) {
+      callback = (node: Element | null) => {
+        triggerRefs.current[index] = node as HTMLButtonElement | null;
+      };
+      setTriggerRefCallbacks.current[index] = callback;
+    }
+    return callback;
+  };
+
   const focusTrigger = (index: number) => {
     setFocusedIndex(index);
     triggerRefs.current[index]?.focus();
@@ -78,12 +101,10 @@ export function Menubar({ items }: MenubarProps): ReactElement {
               setFocusedIndex(index);
             }
           }}
+          onReferenceRef={getTriggerRefCallback(index)}
           trigger={
             <button
               type="button"
-              ref={(node: HTMLButtonElement | null) => {
-                triggerRefs.current[index] = node;
-              }}
               className={triggerClass}
               data-open={openIndex === index || undefined}
               tabIndex={focusedIndex === index ? 0 : -1}
