@@ -23,14 +23,25 @@ export interface DropdownMenuProps {
   trigger: ReactElement<Record<string, unknown>>;
   placement?: Placement;
   children?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function DropdownMenu({
   trigger,
   placement = "bottom-start",
-  children
+  children,
+  open: controlledOpen,
+  onOpenChange
 }: DropdownMenuProps): ReactElement {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen;
+  const setOpen = (value: boolean) => {
+    if (controlledOpen === undefined) {
+      setUncontrolledOpen(value);
+    }
+    onOpenChange?.(value);
+  };
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const elementsRef = useRef<Array<HTMLElement | null>>([]);
 
