@@ -288,4 +288,26 @@ export type { TimelineItem, TimelineProps } from "./components/Timeline";
 export { ImageCropper } from "./components/ImageCropper";
 export type { ImageCropperHandle, ImageCropperProps } from "./components/ImageCropper";
 
+export { Chat } from "./components/Chat";
+export type {
+  ChatAttachment,
+  ChatMessage,
+  ChatMessageRole,
+  ChatMessageStatus,
+  ChatProps,
+} from "./components/Chat";
+
+export { AIPrompt } from "./components/AIPrompt";
+export type {
+  AIPromptProps,
+  PromptCommand,
+  PromptSuggestion,
+} from "./components/AIPrompt";
+
+export { ChatWithThreads } from "./components/ChatWithThreads";
+export type {
+  ChatThread,
+  ChatWithThreadsProps,
+} from "./components/ChatWithThreads";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
