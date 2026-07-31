@@ -1,0 +1,67 @@
+{
+  "name": "@vesture/theme-dark",
+  "version": "0.1.0",
+  "description": "A high-contrast dark theme implementing the @vesture/tokens contract.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Sagar Bhat",
+  "keywords": [
+    "theme",
+    "vesture",
+    "vanilla-extract",
+    "dark-mode"
+  ],
+  "homepage": "https://github.com/sagar1596/vesture/tree/main/packages/theme-dark#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sagar1596/vesture.git",
+    "directory": "packages/theme-dark"
+  },
+  "bugs": {
+    "url": "https://github.com/sagar1596/vesture/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": [
+    "*.css.ts",
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./dist/index.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "@vesture/react": ">=0.3.0",
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@vanilla-extract/css": "^1.16.1",
+    "@vesture/tokens": "^0.1.1"
+  },
+  "devDependencies": {
+    "@vanilla-extract/esbuild-plugin": "^2.3.9",
+    "@vesture/react": "^0.5.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  }
+}
