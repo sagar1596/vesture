@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import {
   Accordion,
+  AIPrompt,
   Alert,
   Avatar,
   Badge,
   Breadcrumbs,
   Button,
   Card,
+  Chat,
   Checkbox,
   Combobox,
   DataGrid,
@@ -41,6 +43,7 @@ import {
   vars
 } from "@vesture/react";
 import type {
+  ChatMessage,
   ComboboxOption,
   DataGridColumn,
   QueryField,
@@ -869,6 +872,99 @@ function TreeViewSection() {
   );
 }
 
+const CHAT_STREAM_TOKENS =
+  "Sure — here's a quick TypeScript example with a fenced code block, so you can see syntax highlighting in action:\n\n```ts\nfunction greet(name: string): string {\n  return `Hello, ${name}!`;\n}\n```\n\nLet me know if you'd like it explained line by line."
+    .split(" ");
+
+function ChatSection() {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { id: "1", role: "user", content: "Can you show me some **markdown**?", timestamp: new Date() },
+    {
+      id: "2",
+      role: "assistant",
+      content: "Sure! Here's a list:\n\n- First\n- Second\n- `inline code`",
+      sender: { name: "Assistant" },
+      timestamp: new Date()
+    }
+  ]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  function simulateStream() {
+    const id = crypto.randomUUID();
+    setMessages((prev) => [...prev, { id, role: "assistant", content: "", streaming: true, sender: { name: "Assistant" } }]);
+    setIsGenerating(true);
+    let index = 0;
+    const interval = setInterval(() => {
+      index += 1;
+      const partial = CHAT_STREAM_TOKENS.slice(0, index).join(" ");
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, content: partial, streaming: index < CHAT_STREAM_TOKENS.length } : m))
+      );
+      if (index >= CHAT_STREAM_TOKENS.length) {
+        clearInterval(interval);
+        setIsGenerating(false);
+      }
+    }, 60);
+  }
+
+  return (
+    <Section title="Chat">
+      <div style={{ height: "520px", display: "flex" }}>
+        <Chat
+          messages={messages}
+          isGenerating={isGenerating}
+          suggestions={["Show me a code example", "What can you do?"]}
+          onSendMessage={(content) => {
+            setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "user", content, timestamp: new Date() }]);
+            simulateStream();
+          }}
+          onEditMessage={(id, content) =>
+            setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)))
+          }
+          onDeleteMessage={(id) => setMessages((prev) => prev.filter((m) => m.id !== id))}
+          onRegenerateMessage={() => simulateStream()}
+          onFilesAdded={(files) => console.log("files added", files)}
+        />
+      </div>
+    </Section>
+  );
+}
+
+function AIPromptSection() {
+  const [log, setLog] = useState<string[]>([]);
+
+  return (
+    <Section title="AIPrompt">
+      <Stack gap="md">
+        <AIPrompt
+          onSubmit={(prompt) => setLog((prev) => [prompt, ...prev])}
+          placeholder='Ask anything, or type "/" for commands…'
+          suggestions={[
+            { id: "1", title: "Summarize", description: "Summarize the current page", prompt: "Summarize this page for me." },
+            { id: "2", title: "Explain code", description: "Explain a selected snippet", prompt: "Explain this code snippet." },
+            { id: "3", title: "Write tests", description: "Draft unit tests", prompt: "Write unit tests for this function." }
+          ]}
+          commands={[
+            { id: "1", label: "/summarize", template: "Summarize the following: " },
+            { id: "2", label: "/translate", template: "Translate the following into French: " },
+            { id: "3", label: "/fix", template: "Fix the bug in the following code: " }
+          ]}
+        />
+        {log.length > 0 ? (
+          <Stack gap="xs">
+            <Label>Submitted prompts</Label>
+            {log.map((entry, i) => (
+              <p key={i} style={{ fontSize: vars.font.sizeSm, color: vars.color.textMuted, margin: 0 }}>
+                {entry}
+              </p>
+            ))}
+          </Stack>
+        ) : null}
+      </Stack>
+    </Section>
+  );
+}
+
 function ComposedFormSection() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -1007,6 +1103,8 @@ export function App() {
           <DataGridFilteringSection />
           <DataGridServerSideSection />
           <TreeViewSection />
+          <ChatSection />
+          <AIPromptSection />
           <ComposedFormSection />
         </Stack>
       </ToastProvider>
