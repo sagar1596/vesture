@@ -98,7 +98,16 @@ export const bubbleColumn = style({
   display: "flex",
   flexDirection: "column",
   gap: vars.space.xs,
-  maxWidth: "min(640px, 80%)"
+  maxWidth: "min(640px, 80%)",
+  // Containing block for actionsButton below — it used to be positioned
+  // relative to messageRow instead, which spans the *entire* row width
+  // (needed for messageRowAlign's flex-direction trick to right/left-align
+  // messages at all). For an assistant bubble narrower than the full row,
+  // that put the button 32px past the row's far edge — off past the visible
+  // bubble entirely, and wide enough to push the whole message list into
+  // its own unwanted horizontal scrollbar. Relative to bubbleColumn instead,
+  // "-space.xl" is measured from the bubble's own actual edge.
+  position: "relative"
 });
 
 export const bubbleColumnAlign = styleVariants({

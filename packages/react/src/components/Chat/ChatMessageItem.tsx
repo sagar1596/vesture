@@ -166,19 +166,19 @@ export function ChatMessageItem({
             {message.timestamp ? <span>{formatTimestamp(message.timestamp)}</span> : null}
           </div>
         ) : null}
-      </div>
 
-      {showActions && !isEditing ? (
-        <ChatMessageActions
-          message={message}
-          html={html}
-          align={align}
-          onEdit={onEditMessage ? startEdit : undefined}
-          onDeleteMessage={onDeleteMessage}
-          onRegenerateMessage={onRegenerateMessage}
-          onRetryMessage={onRetryMessage}
-        />
-      ) : null}
+        {showActions && !isEditing ? (
+          <ChatMessageActions
+            message={message}
+            html={html}
+            align={align}
+            onEdit={onEditMessage ? startEdit : undefined}
+            onDeleteMessage={onDeleteMessage}
+            onRegenerateMessage={onRegenerateMessage}
+            onRetryMessage={onRetryMessage}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
