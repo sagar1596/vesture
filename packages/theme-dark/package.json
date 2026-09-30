@@ -1,6 +1,6 @@
 {
   "name": "@vesture/theme-dark",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A high-contrast dark theme implementing the @vesture/tokens contract.",
   "type": "module",
   "license": "MIT",
@@ -48,7 +48,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
-    "@vesture/react": ">=0.3.0",
+    "@vesture/react": ">=0.6.0",
     "react": ">=18",
     "react-dom": ">=18"
   },
@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@vanilla-extract/esbuild-plugin": "^2.3.9",
-    "@vesture/react": "^0.5.0",
+    "@vesture/react": "^0.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsup": "^8.3.5",

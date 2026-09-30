@@ -29,4 +29,32 @@ describe("Popover", () => {
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
+
+  it("closes on ancestor scroll when onAnchorScroll is 'close'", async () => {
+    render(
+      <Popover content="Popover body" onAnchorScroll="close">
+        <Button>Open</Button>
+      </Popover>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+
+    fireEvent.scroll(window);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("stays open on ancestor scroll by default (follow)", async () => {
+    render(
+      <Popover content="Popover body">
+        <Button>Open</Button>
+      </Popover>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+
+    fireEvent.scroll(window);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
 });

@@ -1,5 +1,11 @@
 # @vesture/react
 
+## 0.6.0
+
+### Minor Changes
+
+- `Popover` now handles anchor scrolling gracefully: it stays pinned to its anchor as ancestors scroll, fades out (without unmounting) once the anchor scrolls fully out of view, and accepts a new `onAnchorScroll` prop (`"follow"` default, or `"close"`) so consumers can choose to dismiss the popover instead of tracking the anchor across scroll.
+
 ## 0.2.1
 
 ### Patch Changes
