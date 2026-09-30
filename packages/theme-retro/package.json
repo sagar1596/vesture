@@ -1,6 +1,6 @@
 {
   "name": "@vesture/theme-retro",
-  "version": "0.1.3",
+  "version": "1.0.0",
   "description": "A warm, terracotta-and-serif retro theme implementing the @vesture/tokens contract.",
   "type": "module",
   "license": "MIT",
@@ -47,7 +47,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
-    "@vesture/react": ">=0.3.0",
+    "@vesture/react": ">=0.6.0",
     "react": ">=18",
     "react-dom": ">=18"
   },
@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@vanilla-extract/esbuild-plugin": "^2.3.9",
-    "@vesture/react": "^0.3.1",
+    "@vesture/react": "^0.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsup": "^8.3.5",

@@ -1,5 +1,12 @@
 # @vesture/theme-retro
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @vesture/react@0.6.0
+
 ## 0.1.1
 
 ### Patch Changes

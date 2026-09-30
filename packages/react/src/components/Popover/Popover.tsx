@@ -1,10 +1,11 @@
 import { cloneElement, isValidElement, useState } from "react";
-import type { ReactElement, ReactNode, Ref } from "react";
+import type { CSSProperties, ReactElement, ReactNode, Ref } from "react";
 import {
   FloatingFocusManager,
   FloatingPortal,
   autoUpdate,
   flip,
+  hide,
   offset,
   shift,
   useClick,
@@ -22,6 +23,13 @@ export interface PopoverProps {
   placement?: Placement;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * What happens when the anchor scrolls out of its scroll container: "follow" (default)
+   * keeps the popover pinned to the anchor, hiding it gracefully (opacity, no unmount, so
+   * position tracking doesn't reset) once the anchor is fully clipped from view. "close"
+   * dismisses the popover on the first scroll of any ancestor instead of tracking it.
+   */
+  onAnchorScroll?: "follow" | "close";
   children: ReactElement<Record<string, unknown>>;
 }
 
@@ -30,23 +38,26 @@ export function Popover({
   placement = "bottom-start",
   open: controlledOpen,
   onOpenChange,
+  onAnchorScroll = "follow",
   children
 }: PopoverProps): ReactElement {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = onOpenChange ?? setUncontrolledOpen;
 
-  const { refs, floatingStyles, context } = useFloating({
+  const { refs, floatingStyles, context, middlewareData } = useFloating({
     open,
     onOpenChange: setOpen,
     placement,
     whileElementsMounted: autoUpdate,
-    middleware: [offset(8), flip(), shift({ padding: 8 })]
+    middleware: [offset(8), flip(), shift({ padding: 8 }), hide({ padding: 8 })]
   });
+
+  const referenceHidden = middlewareData.hide?.referenceHidden ?? false;
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
     useClick(context),
-    useDismiss(context),
+    useDismiss(context, { ancestorScroll: onAnchorScroll === "close" }),
     useRole(context, { role: "dialog" })
   ]);
 
@@ -59,13 +70,22 @@ export function Popover({
     return children;
   }
 
+  const hiddenStyle: CSSProperties = referenceHidden
+    ? { pointerEvents: "none", opacity: 0 }
+    : { opacity: 1 };
+
   return (
     <>
       {cloneElement(children, getReferenceProps({ ref: childRef, ...children.props }))}
       {open ? (
         <FloatingPortal>
           <FloatingFocusManager context={context} modal={false}>
-            <div ref={refs.setFloating} className={popover} style={floatingStyles} {...getFloatingProps()}>
+            <div
+              ref={refs.setFloating}
+              className={popover}
+              style={{ ...floatingStyles, ...hiddenStyle, transition: "opacity 0.1s ease" }}
+              {...getFloatingProps()}
+            >
               {content}
             </div>
           </FloatingFocusManager>

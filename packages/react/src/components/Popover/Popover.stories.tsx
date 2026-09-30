@@ -30,3 +30,29 @@ export default meta;
 type Story = StoryObj<typeof Popover>;
 
 export const Default: Story = {};
+
+const ScrollDemo = (props: { onAnchorScroll: "follow" | "close" }) => (
+  <div style={{ height: "200px", width: "320px", overflow: "auto", border: "1px solid #ccc" }}>
+    <div style={{ height: "150px" }} />
+    <Popover
+      onAnchorScroll={props.onAnchorScroll}
+      content={
+        <Stack gap="sm">
+          <strong>Popover title</strong>
+          <span>Scroll the container to see how the popover reacts.</span>
+        </Stack>
+      }
+    >
+      <Button variant="secondary">Anchor</Button>
+    </Popover>
+    <div style={{ height: "400px" }} />
+  </div>
+);
+
+export const FollowsAnchorOnScroll: Story = {
+  render: () => <ScrollDemo onAnchorScroll="follow" />
+};
+
+export const ClosesOnAnchorScroll: Story = {
+  render: () => <ScrollDemo onAnchorScroll="close" />
+};
