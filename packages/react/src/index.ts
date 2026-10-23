@@ -310,4 +310,28 @@ export type {
   ChatWithThreadsProps,
 } from "./components/ChatWithThreads";
 
+export { Sparkline } from "./components/Sparkline";
+export type { SparklineProps, SparklineCurve } from "./components/Sparkline";
+
+export { RadialGauge, LinearGauge } from "./components/Gauge";
+export type { RadialGaugeProps, LinearGaugeProps, GaugeRange } from "./components/Gauge";
+
+export { Gantt } from "./components/Gantt";
+export type { GanttColumn, GanttProps, GanttTask, GanttTaskChange } from "./components/Gantt";
+
+export { Spreadsheet } from "./components/Spreadsheet";
+export type { SpreadsheetProps, CellPosition, SheetFunction, CellValue } from "./components/Spreadsheet";
+
+export { PivotGrid } from "./components/PivotGrid";
+export type { PivotGridProps, PivotAggregate, PivotCellInfo, PivotCellKind } from "./components/PivotGrid";
+
+export { Treemap } from "./components/charts/Treemap";
+export type { TreemapProps, TreemapDatum, TreemapRect } from "./components/charts/Treemap";
+
+export { Heatmap } from "./components/charts/Heatmap";
+export type { HeatmapProps } from "./components/charts/Heatmap";
+
+export { FunnelChart } from "./components/charts/Funnel";
+export type { FunnelChartProps, FunnelStage, FunnelSegment } from "./components/charts/Funnel";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
