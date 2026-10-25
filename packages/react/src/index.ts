@@ -334,4 +334,70 @@ export type { HeatmapProps } from "./components/charts/Heatmap";
 export { FunnelChart } from "./components/charts/Funnel";
 export type { FunnelChartProps, FunnelStage, FunnelSegment } from "./components/charts/Funnel";
 
+export { ScatterChart } from "./components/charts/Scatter";
+export type { ScatterChartProps, ScatterSeries, ScatterPoint } from "./components/charts/Scatter";
+
+export { RadarChart } from "./components/charts/Radar";
+export type { RadarChartProps, RadarAxis, RadarSeries } from "./components/charts/Radar";
+
+export { WaterfallChart } from "./components/charts/Waterfall";
+export type { WaterfallChartProps, WaterfallDatum, WaterfallBar } from "./components/charts/Waterfall";
+
+export { CandlestickChart, sma, ema } from "./components/charts/Candlestick";
+export type { CandlestickChartProps, CandlestickIndicator, CandlestickType, Candle } from "./components/charts/Candlestick";
+
+export { SankeyChart } from "./components/charts/Sankey";
+export type {
+  SankeyChartProps,
+  SankeyLinkColor,
+  SankeyNodeInput,
+  SankeyLinkInput,
+  SankeyNode,
+  SankeyLink,
+  SankeyLayout
+} from "./components/charts/Sankey";
+
+export { CalendarHeatmap } from "./components/charts/CalendarHeatmap";
+export type { CalendarHeatmapProps, CalendarHeatmapDatum } from "./components/charts/CalendarHeatmap";
+
+export { GeoMap, geoJsonToRegions } from "./components/charts/GeoMap";
+export type {
+  GeoMapProps,
+  GeoMarker,
+  GeoRegion,
+  GeoFeatureCollection,
+  GeoFeature,
+  GeoProjectionOptions,
+  Projector
+} from "./components/charts/GeoMap";
+
+export { OrgChart } from "./components/OrgChart";
+export type { OrgChartProps, OrgNodeData, OrgOrientation, OrgEdgeStyle } from "./components/OrgChart";
+
+export { DashboardGrid, moveItem, resizeItem, compact, normalizeLayout } from "./components/DashboardGrid";
+export type { DashboardGridProps, GridItem } from "./components/DashboardGrid";
+
+export { FilterBar, applyFilters, matches, operatorsFor, OPERATORS } from "./components/FilterBar";
+export type {
+  FilterBarProps,
+  FilterView,
+  FilterCondition,
+  FilterField,
+  FilterFieldType,
+  FilterOption,
+  FilterOperator
+} from "./components/FilterBar";
+
+export { ProductTour } from "./components/ProductTour";
+export type { ProductTourProps, TourStep, TourPlacement } from "./components/ProductTour";
+
+export { VirtualList } from "./components/VirtualList";
+export type { VirtualListProps, VirtualListHandle } from "./components/VirtualList";
+
+export { TransferList } from "./components/TransferList";
+export type { TransferListProps, TransferItem } from "./components/TransferList";
+
+export { TagInput } from "./components/TagInput";
+export type { TagInputProps } from "./components/TagInput";
+
 export { vars, defaultThemeClass, defaultThemeVars } from "@vesture/tokens";
