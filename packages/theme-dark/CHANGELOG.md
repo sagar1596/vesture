@@ -1,5 +1,12 @@
 # @vesture/theme-dark
 
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [1981cc5]
+  - @vesture/react@0.8.0
+
 ## 2.0.0
 
 ### Patch Changes
